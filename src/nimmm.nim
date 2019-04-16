@@ -385,7 +385,7 @@ proc mainLoop() =
                 refresh()
                 currentIndex = 0
             of 't':
-                tabs.add(Tab(cd:getCurrentDir(), index:0))
+                tabs.add(Tab(cd:getCurrentDir(), index:currentIndex))
                 switchTab(tabs.high)
             of 'w':
                 if tabs.len > 1:
