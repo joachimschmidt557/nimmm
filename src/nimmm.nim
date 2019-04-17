@@ -197,6 +197,8 @@ proc askString(question:string): string =
     stdout.hideCursor()
             
 proc spawnShell() =
+    const
+        fallback = "/bin/sh"
     showCursor(stdout)
     stdout.writeLine("")
     stdout.writeLine("")
@@ -205,21 +207,29 @@ proc spawnShell() =
     stdout.writeLine(r" ### nimmm ###")
     stdout.writeLine(r" #############")
     stdout.writeLine("")
-    discard execCmd(getEnv("SHELL", "/bin/sh"))
+    discard execCmd(getEnv("SHELL", fallback))
     hideCursor(stdout)
 
 proc editFile(file:string) =
+    const
+        fallback = "vi"
     showCursor(stdout)
-    discard execCmd(getEnv("EDITOR", "/bin/ed") & " " & file)
+    discard execCmd(getEnv("EDITOR", fallback) & " " & file)
     hideCursor(stdout)
 
 proc viewFile(file:string) =
+    const
+        fallback = "/bin/less"
     showCursor(stdout)
-    discard execCmd(getEnv("PAGER", "/bin/less") & " " & file)
+    discard execCmd(getEnv("PAGER", fallback) & " " & file)
     hideCursor(stdout)
 
 proc openFile(file:string) =
-    discard startProcess("xdg-open" & " " & file,
+    const
+        fallback = "xdg-open"
+    let
+        opener = getEnv("NIMMM_OPEN", fallback)
+    discard startProcess(opener & " " & file,
         options = {poStdErrToStdOut, poUsePath, poEvalCommand})
 
 proc copyEntries(entries:seq[DirEntry]) =
