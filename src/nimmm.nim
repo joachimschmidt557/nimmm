@@ -120,7 +120,7 @@ proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:
     if errMsg.len > 0:
         stdout.styledWrite(fgRed, styleBright, " " & errMsg)
  
-proc redraw(entries:seq[DirEntry], index:int, selectedEntries:seq[DirEntry], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string) =
+proc redraw(entries:seq[DirEntry], index:int, selectedEntries:seq[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string) =
     eraseScreen(stdout)
     setCursorXPos(0)
     let
@@ -137,7 +137,7 @@ proc redraw(entries:seq[DirEntry], index:int, selectedEntries:seq[DirEntry], tab
         let entry = entries[i]
         drawDirEntry(entry,
                     (i == index),
-                    (selectedEntries.contains(entry)))
+                    (selectedEntries.contains(entry.path)))
 
     for i in 1 .. emptyLines:
         stdout.writeLine("")
@@ -174,8 +174,8 @@ proc search(pattern:string): seq[DirEntry] =
     result.sort do (x, y: DirEntry) -> int:
         cmpIgnoreCase(x.path, y.path)
 
-proc delPathFromEntries(entries: var seq[DirEntry], path:string) =
-    entries.keepIf(proc (x:DirEntry):bool = x.path != path)
+proc delStr(entries: var seq[string], path:string) =
+    entries.keepIf(proc (x:string):bool = x != path)
 
 proc askYorN(question:string): bool =
     stdout.write(question)
@@ -232,14 +232,14 @@ proc openFile(file:string) =
     discard startProcess(opener & " " & file,
         options = {poStdErrToStdOut, poUsePath, poEvalCommand})
 
-proc copyEntries(entries:seq[DirEntry]) =
+proc copyEntries(entries:seq[string]) =
     const
         prog = "cp"
         args = " -r -i "
     if entries.len < 1: return
     showCursor(stdout)
     let
-        paths = entries.map(proc (x:DirEntry):string = "\"" & x.path & "\"")
+        paths = entries.map(proc (x:string):string = "\"" & x & "\"")
         files = paths.foldl(a & " " & b)
         dest  = getCurrentDir()
         cmd = prog & args & files & " " & dest
@@ -248,14 +248,14 @@ proc copyEntries(entries:seq[DirEntry]) =
     discard execCmd(cmd)
     hideCursor(stdout)
 
-proc deleteEntries(entries:seq[DirEntry]) =
+proc deleteEntries(entries:seq[string]) =
     const
         prog = "rm"
         args = " -r -i "
     if entries.len < 1: return
     showCursor(stdout)
     let
-        paths = entries.map(proc (x:DirEntry):string = "\"" & x.path & "\"")
+        paths = entries.map(proc (x:string):string = "\"" & x & "\"")
         files = paths.foldl(a & " " & b)
         force = if askYorN("use force? [y/n]"): "-f " else: " "
         cmd = prog & args & force & files
@@ -264,14 +264,15 @@ proc deleteEntries(entries:seq[DirEntry]) =
     discard execCmd(cmd)
     hideCursor(stdout)
 
-proc moveEntries(entries:seq[DirEntry]) =
+proc moveEntries(entries:seq[string]) =
     const
         prog = "mv"
         args = " -i "
     if entries.len < 1: return
     showCursor(stdout)
     let
-        paths = entries.map(proc (x:DirEntry):string = "\"" & x.path & "\"")
+        paths = entries.map(proc (x:string):string = "\"" & x & "\"")
+        #paths = entries.map("\"" & a & "\"")
         files = paths.foldl(a & " " & b)
         dest  = getCurrentDir()
         cmd = prog & args & files & " " & dest
@@ -305,7 +306,7 @@ proc mainLoop() =
         currentIndex = 0
         currentDirEntries:seq[DirEntry]
         currentEntry:DirEntry
-        selectedEntries:seq[DirEntry]
+        selectedEntries:seq[string]
         tabs:seq[Tab]
         currentTab = 0
         err = ""
@@ -348,13 +349,14 @@ proc mainLoop() =
                 refresh()
             of ' ':
                 if currentIndex >= 0:
-                    if not selectedEntries.contains(currentEntry):
-                        selectedEntries.add(currentEntry)
+                    if not selectedEntries.contains(currentEntry.path):
+                        selectedEntries.add(currentEntry.path)
                     else:
-                        selectedEntries.delPathFromEntries(currentEntry.path)
+                        selectedEntries.delStr(currentEntry.path)
             of 'a':
                 if currentIndex >= 0:
-                    selectedEntries.add(currentDirEntries)
+                    let entries = currentDirEntries.map(proc (x:DirEntry):string = x.path)
+                    selectedEntries.add(entries)
             of 's':
                 selectedEntries.reset()
             of 'g':
