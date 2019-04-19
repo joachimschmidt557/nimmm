@@ -1,0 +1,25 @@
+sudo: false
+
+language: c
+os: linux
+
+cache:
+  directories:
+    - "$HOME/.nimble"
+    - "$HOME/.choosenim"
+
+env:
+  - CHOOSENIM_CHOOSE_VERSION="0.19.9"
+
+install:
+  - |
+      curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
+      sh init.sh -y
+  - export PATH=$HOME/.nimble/bin:$PATH
+  - nimble refresh -y
+
+before_script:
+  - set -e
+
+script:
+  - nimble install -y
