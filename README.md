@@ -1,5 +1,7 @@
 # nimmm
 
+![screenshot of nimmm](screenshot.png "nimmm in action")
+
 A terminal file manager written in [nim](https://nim-lang.org/)
 inspired by the awesome [nnn](https://github.com/jarun/nnn). 
 
