@@ -1,9 +1,11 @@
 # nimmm
 
-![screenshot of nimmm](screenshot.png "nimmm in action")
+[![Build Status](https://travis-ci.org/joachimschmidt557/nimmm.svg?branch=master)](https://travis-ci.org/joachimschmidt557/nimmm)
 
 A terminal file manager written in [nim](https://nim-lang.org/)
 inspired by the awesome [nnn](https://github.com/jarun/nnn). 
+
+![screenshot of nimmm](screenshot.png "nimmm in action")
 
 The goal of `nimmm` is not to replace `nnn`; I just
 wanted to code my own version of `nnn` to my liking.
