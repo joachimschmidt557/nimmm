@@ -1,4 +1,4 @@
-import os, terminal, osproc, algorithm, times, strformat, sequtils, strutils, re
+import os, terminal, osproc, algorithm, times, strformat, sequtils, strutils, re, sets
 
 type
     DirEntry = object
@@ -120,7 +120,7 @@ proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:
     if errMsg.len > 0:
         stdout.styledWrite(fgRed, styleBright, " " & errMsg)
  
-proc redraw(entries:seq[DirEntry], index:int, selectedEntries:seq[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string) =
+proc redraw(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string) =
     eraseScreen(stdout)
     setCursorXPos(0)
     let
@@ -232,14 +232,15 @@ proc openFile(file:string) =
     discard startProcess(opener & " " & file,
         options = {poStdErrToStdOut, poUsePath, poEvalCommand})
 
-proc copyEntries(entries:seq[string]) =
+proc copyEntries(entries:HashSet[string]) =
     const
         prog = "cp"
         args = " -r -i "
     if entries.len < 1: return
     showCursor(stdout)
     let
-        paths = entries.map(proc (x:string):string = "\"" & x & "\"")
+        entriesSeq = toSeq(entries.items)
+        paths = entries.mapIt("\"" & it & "\"")
         files = paths.foldl(a & " " & b)
         dest  = getCurrentDir()
         cmd = prog & args & files & " " & dest
@@ -248,14 +249,15 @@ proc copyEntries(entries:seq[string]) =
     discard execCmd(cmd)
     hideCursor(stdout)
 
-proc deleteEntries(entries:seq[string]) =
+proc deleteEntries(entries:HashSet[string]) =
     const
         prog = "rm"
         args = " -r -i "
     if entries.len < 1: return
     showCursor(stdout)
     let
-        paths = entries.map(proc (x:string):string = "\"" & x & "\"")
+        entriesSeq = toSeq(entries.items)
+        paths = entries.mapIt("\"" & it & "\"")
         files = paths.foldl(a & " " & b)
         force = if askYorN("use force? [y/n]"): "-f " else: " "
         cmd = prog & args & force & files
@@ -264,15 +266,15 @@ proc deleteEntries(entries:seq[string]) =
     discard execCmd(cmd)
     hideCursor(stdout)
 
-proc moveEntries(entries:seq[string]) =
+proc moveEntries(entries:HashSet[string]) =
     const
         prog = "mv"
         args = " -i "
     if entries.len < 1: return
     showCursor(stdout)
     let
-        paths = entries.map(proc (x:string):string = "\"" & x & "\"")
-        #paths = entries.map("\"" & a & "\"")
+        entriesSeq = toSeq(entries.items)
+        paths = entries.mapIt("\"" & it & "\"")
         files = paths.foldl(a & " " & b)
         dest  = getCurrentDir()
         cmd = prog & args & files & " " & dest
@@ -306,7 +308,7 @@ proc mainLoop() =
         currentIndex = 0
         currentDirEntries:seq[DirEntry]
         currentEntry:DirEntry
-        selectedEntries:seq[string]
+        selectedEntries = initSet[string]()
         tabs:seq[Tab]
         currentTab = 0
         err = ""
@@ -350,13 +352,13 @@ proc mainLoop() =
             of ' ':
                 if currentIndex >= 0:
                     if not selectedEntries.contains(currentEntry.path):
-                        selectedEntries.add(currentEntry.path)
+                        selectedEntries.incl(currentEntry.path)
                     else:
-                        selectedEntries.delStr(currentEntry.path)
+                        selectedEntries.excl(currentEntry.path)
             of 'a':
                 if currentIndex >= 0:
-                    let entries = currentDirEntries.map(proc (x:DirEntry):string = x.path)
-                    selectedEntries.add(entries)
+                    for entry in currentDirEntries:
+                        selectedEntries.incl(entry.path)
             of 's':
                 selectedEntries.reset()
             of 'g':
@@ -439,15 +441,15 @@ proc mainLoop() =
                 refresh()
             of 'P':
                 copyEntries(selectedEntries)
-                selectedEntries.reset()
+                selectedEntries.clear()
                 refresh()
             of 'V':
                 moveEntries(selectedEntries)
-                selectedEntries.reset()
+                selectedEntries.clear()
                 refresh()
             of 'X':
                 deleteEntries(selectedEntries)
-                selectedEntries.reset()
+                selectedEntries.clear()
                 refresh()
             of '/':
                 currentDirEntries = startSearch()

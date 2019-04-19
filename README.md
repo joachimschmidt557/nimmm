@@ -23,6 +23,7 @@ with environment variables just like `nnn` does.
 | --- | --- |
 | `EDITOR` | file editor |
 | `PAGER` | file viewer |
+| `NIMMM_OPEN` | file opener |
 
 ### Basic commands
 
@@ -95,8 +96,8 @@ C/C++ code to binaries.
 
 ## Installation
 
-``
-git clone https://github.com/joachimschmidt557/nimmm
-cd nimmm
-nimble install
-``
+### From source
+
+    $ git clone https://github.com/joachimschmidt557/nimmm
+    $ cd nimmm
+    $ nimble install
