@@ -174,9 +174,6 @@ proc search(pattern:string): seq[DirEntry] =
     result.sort do (x, y: DirEntry) -> int:
         cmpIgnoreCase(x.path, y.path)
 
-proc delStr(entries: var seq[string], path:string) =
-    entries.keepIf(proc (x:string):bool = x != path)
-
 proc askYorN(question:string): bool =
     stdout.write(question)
     while true:
@@ -360,7 +357,7 @@ proc mainLoop() =
                     for entry in currentDirEntries:
                         selectedEntries.incl(entry.path)
             of 's':
-                selectedEntries.reset()
+                selectedEntries.clear()
             of 'g':
                 currentIndex = 0
             of 'G':

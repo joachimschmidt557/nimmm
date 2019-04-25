@@ -11,3 +11,5 @@ bin           = @["nimmm"]
 # Dependencies
 
 requires "nim >= 0.19.9"
+requires "noise >= 0.1.3"
+#requires "ncurses >= 1.0.0"
