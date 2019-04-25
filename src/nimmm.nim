@@ -207,6 +207,9 @@ proc spawnShell() =
     discard execCmd(getEnv("SHELL", fallback))
     hideCursor(stdout)
 
+proc safePath(path:string):string = 
+    "\"" & path & "\""
+
 proc editFile(file:string) =
     const
         fallback = "vi"
@@ -237,9 +240,9 @@ proc copyEntries(entries:HashSet[string]) =
     showCursor(stdout)
     let
         entriesSeq = toSeq(entries.items)
-        paths = entries.mapIt("\"" & it & "\"")
+        paths = entriesSeq.map(safePath)
         files = paths.foldl(a & " " & b)
-        dest  = getCurrentDir()
+        dest  = getCurrentDir().safePath
         cmd = prog & args & files & " " & dest
     stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
@@ -254,7 +257,7 @@ proc deleteEntries(entries:HashSet[string]) =
     showCursor(stdout)
     let
         entriesSeq = toSeq(entries.items)
-        paths = entries.mapIt("\"" & it & "\"")
+        paths = entriesSeq.map(safePath)
         files = paths.foldl(a & " " & b)
         force = if askYorN("use force? [y/n]"): "-f " else: " "
         cmd = prog & args & force & files
@@ -271,9 +274,9 @@ proc moveEntries(entries:HashSet[string]) =
     showCursor(stdout)
     let
         entriesSeq = toSeq(entries.items)
-        paths = entries.mapIt("\"" & it & "\"")
+        paths = entriesSeq.map(safePath)
         files = paths.foldl(a & " " & b)
-        dest  = getCurrentDir()
+        dest  = getCurrentDir().safePath
         cmd = prog & args & files & " " & dest
     stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
