@@ -1,4 +1,4 @@
-import os, terminal, osproc, algorithm, times, strformat, sequtils, strutils, re, sets
+import os, terminal, osproc, algorithm, times, strformat, sequtils, strutils, re, sets, noise
 
 type
     DirEntry = object
@@ -187,11 +187,18 @@ proc askYorN(question:string): bool =
             else:
                 continue
 
-proc askString(question:string): string =
+proc askString(question:string, preload=""): string =
     stdout.showCursor()
-    stdout.write(question)
-    result = stdin.readLine()
+    setCursorXPos(0)
+
+    var noise = Noise.init()
+    noise.preloadBuffer(preload)    
+    noise.setPrompt(question)
+    let ok = noise.readLine()
     stdout.hideCursor()
+
+    if not ok: return ""
+    return noise.getLine
             
 proc spawnShell() =
     const
@@ -296,6 +303,13 @@ proc newDir() =
     let
         name = askString(" -> " & cmd)
     discard execCmd(cmd & name)
+
+proc rename(path:string) =
+    const
+        cmd = "mv "
+    let
+        newName = askString(" -> " & cmd & path & " ", path)
+    discard execCmd(cmd & path & " " & newName)
 
 proc startSearch(): seq[DirEntry] =
     let
@@ -438,6 +452,9 @@ proc mainLoop() =
                 refresh()
             of 'd':
                 newDir()
+                refresh()
+            of 'r':
+                rename(currentEntry.relative)
                 refresh()
             of 'P':
                 copyEntries(selectedEntries)

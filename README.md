@@ -55,6 +55,7 @@ with environment variables just like `nnn` does.
 | --- | --- |
 | `e` | edit file in `$EDITOR` |
 | `p` | view file in `$PAGER` |
+| `r` | rename file/directory |
 
 ### Selections
 
