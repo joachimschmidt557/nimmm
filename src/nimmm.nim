@@ -308,8 +308,9 @@ proc rename(path:string) =
     const
         cmd = "mv "
     let
-        newName = askString(" -> " & cmd & path & " ", path)
-    discard execCmd(cmd & path & " " & newName)
+        oldName = path.safePath
+        newName = askString(" -> " & cmd & oldName & " ", path)
+    discard execCmd(cmd & oldName & " " & newName.safePath)
 
 proc startSearch(): seq[DirEntry] =
     let
