@@ -147,10 +147,10 @@ proc redraw(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], t
                    hidden, errMsg)
 
 proc getIndexOfDir(entries:seq[DirEntry], dir:string): int =
-    for i in entries.low .. entries.high:
-        if entries[i].path == dir:
-            return i
-    return 0
+    let
+        paths = entries.mapIt(it.path)
+    result = paths.binarySearch(dir, cmpIgnoreCase)
+    if result < 0: result = 0
 
 proc scan(showHidden:bool): seq[DirEntry] =
     for kind, path in walkDir(getCurrentDir()):
