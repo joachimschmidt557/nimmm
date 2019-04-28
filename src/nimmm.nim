@@ -317,6 +317,12 @@ proc startSearch(): seq[DirEntry] =
         pattern = askString(" /")
     result = search(pattern)
 
+proc safeSetCurDir(path:string) =
+    var safeDir = path
+    while not existsDir(safeDir):
+        safeDir = safeDir.parentDir
+    setCurrentDir(safeDir)
+
 proc mainLoop() =
     var
         showHidden = false
@@ -329,6 +335,7 @@ proc mainLoop() =
         err = ""
 
     proc refresh() =
+        err = ""
         currentDirEntries = scan(showHidden)
         if currentDirEntries.len > 0:
             if currentIndex < 0:
@@ -337,12 +344,11 @@ proc mainLoop() =
                 currentIndex = currentDirEntries.high
         else:
             currentIndex = -1
-        err = ""
          
     proc switchTab(index:int) =
         if index < tabs.len:
             currentTab = index
-            setCurrentDir(tabs[currentTab].cd)
+            safeSetCurDir(tabs[currentTab].cd)
             currentIndex = tabs[currentTab].index
             refresh()
  
@@ -391,9 +397,9 @@ proc mainLoop() =
             of 'h':
                 let prevDir = getCurrentDir()
                 if parentDir(getCurrentDir()) == "":
-                    setCurrentDir("/")
+                    safeSetCurDir("/")
                 else:
-                    setCurrentDir(parentDir(getCurrentDir()))
+                    safeSetCurDir(parentDir(getCurrentDir()))
                 refresh()
                 currentIndex = getIndexOfDir(currentDirEntries, prevDir)
             of 'l':
@@ -401,16 +407,16 @@ proc mainLoop() =
                     if currentEntry.info.kind == pcDir:
                         let prev = getCurrentDir()
                         try:
-                            setCurrentDir(currentEntry.path)
+                            safeSetCurDir(currentEntry.path)
                             refresh()
                             currentIndex = 0
                         except:
                             err = "Cannot open directory"
-                            setCurrentDir(prev)
+                            safeSetCurDir(prev)
                     elif currentEntry.info.kind == pcFile:
                         openFile(currentEntry.path)
             of '~':
-                setCurrentDir(getHomeDir())
+                safeSetCurDir(getHomeDir())
                 refresh()
                 currentIndex = 0
             of 't':
