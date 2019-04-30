@@ -1,4 +1,4 @@
-import os, terminal, osproc, algorithm, times, strformat, sequtils, strutils, re, sets, noise
+import os, terminal, osproc, algorithm, times, strformat, sequtils, strutils, re, sets, noise, nimbox
 
 type
     DirEntry = object

@@ -12,4 +12,4 @@ bin           = @["nimmm"]
 
 requires "nim >= 0.19.9"
 requires "noise >= 0.1.3"
-#requires "ncurses >= 1.0.0"
+requires "nimbox >= 0.1.0"
