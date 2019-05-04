@@ -104,14 +104,16 @@ proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var N
         (if highlight or isDir: styBold else: styNone))
 
 proc drawHeader(numTabs:int, currentTab:int, nb:var Nimbox) =
+    let
+        offsetCd = 6 + (if numTabs > 1: 2*numTabs else: 0)
     nb.print(0, 0, "nimmm ", clrYellow, clrDefault, styNone)
     if numTabs > 1:
         for i in 1 .. numTabs:
-            if i == currentTab-1:
+            if i == currentTab+1:
                 nb.print(6+2*(i-1), 0, $(i) & " ", clrYellow, clrDefault, styBold)
             else:
                 nb.print(6+2*(i-1), 0, $(i) & " ")
-    nb.print(6 + 2*(numTabs), 0, getCurrentDir(), clrYellow, clrDefault, styBold)
+    nb.print(offsetCd, 0, getCurrentDir(), clrYellow, clrDefault, styBold)
 
 proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:string, nb:var Nimbox) = 
     nb.print(0, nb.height() - 1, 
