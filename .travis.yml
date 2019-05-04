@@ -12,6 +12,7 @@ env:
   - CHOOSENIM_CHOOSE_VERSION="devel"
 
 install:
+  - apt-get install libtermbox-dev
   - |
       curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
       sh init.sh -y
