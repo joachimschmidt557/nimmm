@@ -1,4 +1,4 @@
-import os, terminal, osproc, algorithm, times, strformat, sequtils, strutils, re, sets, noise, nimbox
+import os, osproc, algorithm, times, strformat, sequtils, strutils, re, sets, noise, nimbox
 
 type
     DirEntry = object
@@ -24,10 +24,12 @@ proc sizeToString(size:BiggestInt): string =
         result = fmt"{siz/m:7}" & "M"
     elif size < t:
         result = fmt"{siz/g:7}" & "G"
+    else:
+        result = fmt"{siz/t:7}" & "T"
 
-proc getTopIndex(lenEntries:int, index:int): int =
+proc getTopIndex(lenEntries:int, index:int, nb:Nimbox): int =
     let
-        entriesHeight = terminalHeight() - 4
+        entriesHeight = nb.height() - 4
         halfEntriesHeight = entriesHeight div 2
     # Terminal window is very small, only
     # draw one item
@@ -46,25 +48,15 @@ proc getTopIndex(lenEntries:int, index:int): int =
     else:
         result = index - halfEntriesHeight
 
-proc getBottomIndex(lenIndexes:int, topIndex:int): int =
+proc getBottomIndex(lenIndexes:int, topIndex:int, nb:Nimbox): int =
     let
-        entriesHeight = terminalHeight() - 4
-    # Terminal window is very small
+        entriesHeight = nb.height() - 4
+    # Terminal window is very small; only
+    # show one row
     if entriesHeight <= 0:
         result = topIndex
     else:
         result = min(lenIndexes - 1, topIndex + entriesHeight - 1)
-
-proc getEmptyLines(lenEntries:int): int = 
-    let
-        entriesHeight = terminalHeight() - 4
-    # Leave space for the "Empty directory" line
-    if lenEntries == 0:
-        result = entriesHeight - 1
-    elif lenEntries >= entriesHeight:
-        result = 0
-    else:
-        result = entriesHeight - lenEntries
 
 proc formatPath(path:string, length:int): string =
     if path.len <= length:
@@ -73,19 +65,32 @@ proc formatPath(path:string, length:int): string =
         result = path
         result.setLen(length)
 
-proc drawDirEntry(entry:DirEntry, highlight:bool, selected:bool) =
+proc getFgColor(entry:DirEntry):Color =
+    if entry.info.kind == pcDir:
+        clrYellow
+    elif entry.info.kind == pcLinkToDir or
+         entry.info.kind == pcLinkToFile:
+        clrBlue
+    elif fpOthersExec in entry.info.permissions or
+         fpUserExec in entry.info.permissions or
+         fpGroupExec in entry.info.permissions:
+        clrGreen
+    else:
+        clrWhite
+
+proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var Nimbox) =
     const
         paddingLeft = 32
     let
-        isDir = entry.info.kind == pcDir
-        pathWidth = terminalWidth() - paddingLeft
-    if isDir: stdout.setStyle({styleBright})
-    stdout.styledWriteLine(
-        (if highlight: bgWhite else: bgBlack),
-        (if highlight:
-            fgBlack elif isDir: 
-            fgYellow else:
-            fgWhite),
+        isDir = entry.info.kind == pcDir or
+                entry.info.kind == pcLinkToDir
+        pathWidth = nb.width() - paddingLeft
+    nb.print(0, y,
+#        (if highlight: bgWhite else: bgBlack),
+#        (if highlight:
+#            fgBlack elif isDir: 
+#            fgYellow else:
+#            fgWhite),
         (if highlight: " -> " else: "    ") &
         (if selected: "+ " else: "  ") &
         (entry.info.lastWriteTime.format("yyyy-MM-dd HH:mm")) &
@@ -93,58 +98,61 @@ proc drawDirEntry(entry:DirEntry, highlight:bool, selected:bool) =
         (if isDir:
             "       /" else: sizeToString(entry.info.size)) &
         " " &
-        entry.relative.formatPath(pathWidth))
+        entry.relative.formatPath(pathWidth),
+        (if highlight: clrBlack else: getFgColor(entry)),
+        (if highlight: clrWhite else: clrBlack),
+        (if highlight or isDir: styBold else: styNone))
 
-proc drawHeader(tabs:seq[Tab], currentTab:int) =
-    stdout.styledWrite(fgYellow, "nimmm ")
-    if tabs.len > 1:
-        for i in tabs.low .. tabs.high:
-            if i == currentTab:
-                stdout.styledWrite(fgYellow, styleBright, $(i+1) & " ")
+proc drawHeader(numTabs:int, currentTab:int, nb:var Nimbox) =
+    nb.print(0, 0, "nimmm ", clrYellow, clrDefault, styNone)
+    if numTabs > 1:
+        for i in 1 .. numTabs:
+            if i == currentTab-1:
+                nb.print(6+2*(i-1), 0, $(i) & " ", clrYellow, clrDefault, styBold)
             else:
-                stdout.write($(i+1) & " ")
-    stdout.styledWriteLine(fgYellow, styleBright, getCurrentDir())
-    stdout.writeLine("")
+                nb.print(6+2*(i-1), 0, $(i) & " ")
+    nb.print(6 + 2*(numTabs), 0, getCurrentDir(), clrYellow, clrDefault, styBold)
 
-proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:string) = 
-    stdout.writeLine("")
-    stdout.styledWrite(fgYellow, 
-        $(index + 1) &
-        "/" &
-        $lenEntries)
+proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:string, nb:var Nimbox) = 
+    nb.print(0, nb.height() - 1, 
+        $(index + 1) & "/" & $lenEntries,
+        clrYellow)
     if hidden:
-        stdout.styledWrite(fgYellow, styleBright, " H")
+        nb.print(5, nb.height() - 1, " H")
     if lenSelected > 0: 
-        stdout.styledWrite(fgYellow,
+        nb.print(0, 0,
             " " & $lenSelected & " selected")
     if errMsg.len > 0:
-        stdout.styledWrite(fgRed, styleBright, " " & errMsg)
+        nb.print(0, 0, " " & errMsg)
  
-proc redraw(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string) =
-    eraseScreen(stdout)
-    setCursorXPos(0)
+proc redraw(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string, nb:var Nimbox) =
+    nb.clear()
     let
-        topIndex = getTopIndex(entries.len, index)
-        bottomIndex = getBottomIndex(entries.len, topIndex)
-        emptyLines = getEmptyLines(entries.len)
+        topIndex = getTopIndex(entries.len, index, nb)
+        bottomIndex = getBottomIndex(entries.len, topIndex, nb)
+        #emptyLines = getEmptyLines(entries.len)
 
-    if terminalHeight() > 4:
-        drawHeader(tabs, currentTab)
+    if nb.height() > 4:
+        drawHeader(tabs.len, currentTab, nb)
    
     if entries.len < 1:
-        stdout.styledWriteLine(fgYellow, "Empty directory")
+        nb.print(0, 2, "Empty directory", clrYellow)
     for i in topIndex .. bottomIndex:
         let entry = entries[i]
         drawDirEntry(entry,
+                    i-topIndex+2,
                     (i == index),
-                    (selectedEntries.contains(entry.path)))
+                    (selectedEntries.contains(entry.path)),
+                    nb)
 
-    for i in 1 .. emptyLines:
-        stdout.writeLine("")
+    #for i in 1 .. emptyLines:
+    #    stdout.writeLine("")
 
-    if terminalHeight() > 4:
+    if nb.height() > 4:
         drawFooter(index, entries.len, selectedEntries.len,
-                   hidden, errMsg)
+                   hidden, errMsg, nb)
+
+    nb.present()
 
 proc getIndexOfDir(entries:seq[DirEntry], dir:string): int =
     let
@@ -200,10 +208,10 @@ proc askString(question:string, preload=""): string =
     if not ok: return ""
     return noise.getLine
             
-proc spawnShell() =
+proc spawnShell(nb:var Nimbox) =
     const
         fallback = "/bin/sh"
-    showCursor(stdout)
+    nb.shutdown()
     stdout.writeLine("")
     stdout.writeLine("")
     stdout.writeLine(r"  /\^/\^/\^/\ ")
@@ -212,24 +220,24 @@ proc spawnShell() =
     stdout.writeLine(r" #############")
     stdout.writeLine("")
     discard execCmd(getEnv("SHELL", fallback))
-    hideCursor(stdout)
+    nb = newNimbox()
 
 proc safePath(path:string):string = 
     "\"" & path & "\""
 
-proc editFile(file:string) =
+proc editFile(file:string, nb:var Nimbox) =
     const
         fallback = "vi"
-    showCursor(stdout)
+    nb.shutdown()
     discard execCmd(getEnv("EDITOR", fallback) & " " & file)
-    hideCursor(stdout)
+    nb = newNimbox()
 
-proc viewFile(file:string) =
+proc viewFile(file:string, nb:var Nimbox) =
     const
         fallback = "/bin/less"
-    showCursor(stdout)
+    nb.shutdown()
     discard execCmd(getEnv("PAGER", fallback) & " " & file)
-    hideCursor(stdout)
+    nb = newNimbox()
 
 proc openFile(file:string) =
     const
@@ -323,7 +331,7 @@ proc safeSetCurDir(path:string) =
         safeDir = safeDir.parentDir
     setCurrentDir(safeDir)
 
-proc mainLoop() =
+proc mainLoop(nb:var Nimbox) =
     var
         showHidden = false
         currentIndex = 0
@@ -360,12 +368,12 @@ proc mainLoop() =
         tabs[currentTab].cd = getCurrentDir()
         tabs[currentTab].index = currentIndex
         redraw(currentDirEntries, currentIndex, selectedEntries,
-               tabs, currentTab, showHidden, err)
+               tabs, currentTab, showHidden, err, nb)
         case getch():
             of 'q':
                 break
             of '!':
-                spawnShell()
+                spawnShell(nb)
                 refresh()
             of '.':
                 showHidden = not showHidden
@@ -449,11 +457,12 @@ proc mainLoop() =
             of 'e':
                 if currentIndex >= 0:
                     if currentEntry.info.kind == pcFile:
-                        editFile(currentEntry.path)
+                        editFile(currentEntry.path, nb)
+                        refresh()
             of 'p':
                 if currentIndex >= 0:
                     if currentEntry.info.kind == pcFile:
-                        viewFile(currentEntry.path)
+                        viewFile(currentEntry.path, nb)
             of 'f':
                 newFile()
                 refresh()
@@ -482,7 +491,9 @@ proc mainLoop() =
                 continue
 
 when isMainModule:
-    hideCursor(stdout)
-    addQuitProc(proc () {.noconv.} = showCursor(stdout))
-    addQuitProc(resetAttributes)
-    mainLoop()
+    #hideCursor(stdout)
+    #addQuitProc(proc () {.noconv.} = showCursor(stdout))
+    #addQuitProc(resetAttributes)
+    var nb = newNimbox()
+    addQuitProc(proc () {.noconv.} = nb.shutdown())
+    mainLoop(nb)
