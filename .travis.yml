@@ -16,7 +16,7 @@ install:
   - cd termbox
   - sudo ./waf configure --prefix=/usr
   - sudo ./waf
-  - sudo ./waf install --targets=termbox_shared --destdir=/usr
+  - sudo ./waf install --targets=termbox_shared
   - sudo cp ./src/termbox.h /usr/include
   - ls /usr/include
   - cd ..
