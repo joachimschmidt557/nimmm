@@ -116,23 +116,26 @@ proc drawHeader(numTabs:int, currentTab:int, nb:var Nimbox) =
     nb.print(offsetCd, 0, getCurrentDir(), clrYellow, clrDefault, styBold)
 
 proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:string, nb:var Nimbox) = 
-    nb.print(0, nb.height() - 1, 
-        $(index + 1) & "/" & $lenEntries,
-        clrYellow)
+    let
+        y = nb.height() - 1
+        entriesStr = $(index + 1) & "/" & $lenEntries
+        selectedStr = " " & $lenSelected & " selected"
+        offsetH = entriesStr.len
+        offsetSelected = offsetH + (if hidden: 2 else: 0)
+        offsetErrMsg = offsetSelected + (if lenSelected > 0: selectedStr.len else: 0)
+    nb.print(0, y, entriesStr, clrYellow)
     if hidden:
-        nb.print(5, nb.height() - 1, " H")
+        nb.print(offsetH, y, " H", clrYellow, clrDefault, styBold)
     if lenSelected > 0: 
-        nb.print(0, 0,
-            " " & $lenSelected & " selected")
+        nb.print(offsetSelected, y, selectedStr)
     if errMsg.len > 0:
-        nb.print(0, 0, " " & errMsg)
+        nb.print(offsetErrMsg, y, " " & errMsg)
  
 proc redraw(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string, nb:var Nimbox) =
     nb.clear()
     let
         topIndex = getTopIndex(entries.len, index, nb)
         bottomIndex = getBottomIndex(entries.len, topIndex, nb)
-        #emptyLines = getEmptyLines(entries.len)
 
     if nb.height() > 4:
         drawHeader(tabs.len, currentTab, nb)
@@ -146,9 +149,6 @@ proc redraw(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], t
                     (i == index),
                     (selectedEntries.contains(entry.path)),
                     nb)
-
-    #for i in 1 .. emptyLines:
-    #    stdout.writeLine("")
 
     if nb.height() > 4:
         drawFooter(index, entries.len, selectedEntries.len,
