@@ -17,6 +17,8 @@ install:
   - ./waf configure --prefix=/usr
   - sudo ./waf
   - sudo ./waf install --targets=termbox_shared --destdir=PREFIX
+  - sudo cp ./src/termbox.h /usr/include
+  - ls /usr/include
   - cd ..
   - |
       curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
