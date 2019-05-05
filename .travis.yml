@@ -14,9 +14,9 @@ env:
 install:
   - git clone https://github.com/nsf/termbox
   - cd termbox
-  - ./waf configure --prefix=/usr
+  - sudo ./waf configure --prefix=/usr
   - sudo ./waf
-  - sudo ./waf install --targets=termbox_shared --destdir=PREFIX
+  - sudo ./waf install --targets=termbox_shared --destdir=/usr
   - sudo cp ./src/termbox.h /usr/include
   - ls /usr/include
   - cd ..
