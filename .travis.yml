@@ -15,8 +15,8 @@ install:
   - git clone https://github.com/nsf/termbox
   - cd termbox
   - ./waf configure --prefix=/usr
-  - ./waf
-  - sudo ./waf install --destdir=PREFIX
+  - sudo ./waf
+  - sudo ./waf install --targets=termbox_shared --destdir=PREFIX
   - cd ..
   - |
       curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
