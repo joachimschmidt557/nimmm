@@ -12,7 +12,10 @@ env:
   - CHOOSENIM_CHOOSE_VERSION="devel"
 
 install:
-  - sudo apt-get install termbox
+  - git clone https://github.com/nsf/termbox
+  - ./termbox/waf configure --prefix=/usr
+  - ./termbox/waf
+  - sudo ./termbox/waf install --destdir=PREFIX
   - |
       curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
       sh init.sh -y
