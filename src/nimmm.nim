@@ -184,7 +184,7 @@ proc search(pattern:string): seq[DirEntry] =
     result.sort do (x, y: DirEntry) -> int:
         cmpIgnoreCase(x.path, y.path)
 
-proc askYorN(question:string): bool =
+proc askYorN(question:string, nb:var Nimbox): bool =
     stdout.write(question)
     while true:
         case getCh():
@@ -197,15 +197,11 @@ proc askYorN(question:string): bool =
             else:
                 continue
 
-proc askString(question:string, preload=""): string =
-    stdout.showCursor()
-    setCursorXPos(0)
-
+proc askString(question:string, nb:var Nimbox, preload=""): string =
     var noise = Noise.init()
     noise.preloadBuffer(preload)    
     noise.setPrompt(question)
     let ok = noise.readLine()
-    stdout.hideCursor()
 
     if not ok: return ""
     return noise.getLine
@@ -249,12 +245,12 @@ proc openFile(file:string) =
     discard startProcess(opener & " " & file,
         options = {poStdErrToStdOut, poUsePath, poEvalCommand})
 
-proc copyEntries(entries:HashSet[string]) =
+proc copyEntries(entries:HashSet[string], nb: var Nimbox) =
     const
         prog = "cp"
         args = " -r -i "
     if entries.len < 1: return
-    showCursor(stdout)
+    nb.shutdown()
     let
         entriesSeq = toSeq(entries.items)
         paths = entriesSeq.map(safePath)
@@ -264,31 +260,31 @@ proc copyEntries(entries:HashSet[string]) =
     stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
     discard execCmd(cmd)
-    hideCursor(stdout)
+    nb = newNimbox()
 
-proc deleteEntries(entries:HashSet[string]) =
+proc deleteEntries(entries:HashSet[string], nb:var Nimbox) =
     const
         prog = "rm"
         args = " -r -i "
     if entries.len < 1: return
-    showCursor(stdout)
+    nb.shutdown()
     let
         entriesSeq = toSeq(entries.items)
         paths = entriesSeq.map(safePath)
         files = paths.foldl(a & " " & b)
-        force = if askYorN("use force? [y/n]"): "-f " else: " "
+        force = if askYorN("use force? [y/n]", nb): "-f " else: " "
         cmd = prog & args & force & files
     stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
     discard execCmd(cmd)
-    hideCursor(stdout)
+    nb = newNimbox()
 
-proc moveEntries(entries:HashSet[string]) =
+proc moveEntries(entries:HashSet[string], nb: var Nimbox) =
     const
         prog = "mv"
         args = " -i "
     if entries.len < 1: return
-    showCursor(stdout)
+    nb.shutdown()
     let
         entriesSeq = toSeq(entries.items)
         paths = entriesSeq.map(safePath)
@@ -298,34 +294,42 @@ proc moveEntries(entries:HashSet[string]) =
     stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
     discard execCmd(cmd)
-    hideCursor(stdout)
+    nb = newNimbox()
 
-proc newFile() =
+proc newFile(nb:var Nimbox) =
     const
         cmd = "touch "
+    nb.shutdown()
     let
-        name = askString(" -> " & cmd)
+        name = askString(" -> " & cmd, nb)
     discard execCmd(cmd & name)
+    nb = newNimbox()
 
-proc newDir() =
+proc newDir(nb:var Nimbox) =
     const
         cmd = "mkdir "
+    nb.shutdown()
     let
-        name = askString(" -> " & cmd)
+        name = askString(" -> " & cmd, nb)
     discard execCmd(cmd & name)
+    nb = newNimbox()
 
-proc rename(path:string) =
+proc rename(path:string, nb:var Nimbox) =
     const
         cmd = "mv "
+    nb.shutdown()
     let
         oldName = path.safePath
-        newName = askString(" -> " & cmd & oldName & " ", path)
+        newName = askString(" -> " & cmd & oldName & " ", nb, path)
     discard execCmd(cmd & oldName & " " & newName.safePath)
+    nb = newNimbox()
 
-proc startSearch(): seq[DirEntry] =
+proc startSearch(nb:var Nimbox): seq[DirEntry] =
+    nb.shutdown()
     let
-        pattern = askString(" /")
+        pattern = askString(" /", nb)
     result = search(pattern)
+    nb = newNimbox()
 
 proc safeSetCurDir(path:string) =
     var safeDir = path
@@ -466,36 +470,33 @@ proc mainLoop(nb:var Nimbox) =
                     if currentEntry.info.kind == pcFile:
                         viewFile(currentEntry.path, nb)
             of 'f':
-                newFile()
+                newFile(nb)
                 refresh()
             of 'd':
-                newDir()
+                newDir(nb)
                 refresh()
             of 'r':
-                rename(currentEntry.relative)
+                rename(currentEntry.relative, nb)
                 refresh()
             of 'P':
-                copyEntries(selectedEntries)
+                copyEntries(selectedEntries, nb)
                 selectedEntries.clear()
                 refresh()
             of 'V':
-                moveEntries(selectedEntries)
+                moveEntries(selectedEntries, nb)
                 selectedEntries.clear()
                 refresh()
             of 'X':
-                deleteEntries(selectedEntries)
+                deleteEntries(selectedEntries, nb)
                 selectedEntries.clear()
                 refresh()
             of '/':
-                currentDirEntries = startSearch()
+                currentDirEntries = startSearch(nb)
                 currentIndex = 0
             else:
                 continue
 
 when isMainModule:
-    #hideCursor(stdout)
-    #addQuitProc(proc () {.noconv.} = showCursor(stdout))
-    #addQuitProc(resetAttributes)
     var nb = newNimbox()
     addQuitProc(proc () {.noconv.} = nb.shutdown())
     mainLoop(nb)
