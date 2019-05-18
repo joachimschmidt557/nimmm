@@ -171,16 +171,17 @@ proc scan(showHidden:bool): seq[DirEntry] =
     result.sort do (x, y: DirEntry) -> int:
         cmpIgnoreCase(x.path, y.path)
 
-proc search(pattern:string): seq[DirEntry] =
+proc search(pattern:string, showHidden:bool): seq[DirEntry] =
     let
         regex = re(pattern)
     for kind, path in walkDir(getCurrentDir()):
         let
             relative = extractFilename(path)
         if relative.match(regex):
-            result.add(DirEntry(path:path,
-                info:getFileInfo(path),
-                relative:relative))
+            if showHidden or not isHidden(path):
+                result.add(DirEntry(path:path,
+                    info:getFileInfo(path),
+                    relative:relative))
     result.sort do (x, y: DirEntry) -> int:
         cmpIgnoreCase(x.path, y.path)
 
@@ -324,11 +325,11 @@ proc rename(path:string, nb:var Nimbox) =
     discard execCmd(cmd & oldName & " " & newName.safePath)
     nb = newNimbox()
 
-proc startSearch(nb:var Nimbox): seq[DirEntry] =
+proc startSearch(nb:var Nimbox, showHidden:bool): seq[DirEntry] =
     nb.shutdown()
     let
         pattern = askString(" /", nb)
-    result = search(pattern)
+    result = search(pattern, showHidden)
     nb = newNimbox()
 
 proc safeSetCurDir(path:string) =
@@ -491,7 +492,7 @@ proc mainLoop(nb:var Nimbox) =
                 selectedEntries.clear()
                 refresh()
             of '/':
-                currentDirEntries = startSearch(nb)
+                currentDirEntries = startSearch(nb, showHidden)
                 currentIndex = 0
             else:
                 continue
