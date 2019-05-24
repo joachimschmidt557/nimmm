@@ -366,7 +366,40 @@ proc mainLoop(nb:var Nimbox) =
             safeSetCurDir(tabs[currentTab].cd)
             currentIndex = tabs[currentTab].index
             refresh()
- 
+
+    proc up() =
+        dec currentIndex
+        if currentIndex < 0:
+            currentIndex = currentDirEntries.high
+
+    proc down() =
+        inc currentIndex
+        if currentIndex > currentDirEntries.high:
+            currentIndex = 0
+
+    proc left() =
+        let prevDir = getCurrentDir()
+        if parentDir(getCurrentDir()) == "":
+            safeSetCurDir("/")
+        else:
+            safeSetCurDir(parentDir(getCurrentDir()))
+        refresh()
+        currentIndex = getIndexOfDir(currentDirEntries, prevDir)
+
+    proc right() =
+        if currentIndex >= 0:
+            if currentEntry.info.kind == pcDir:
+                let prev = getCurrentDir()
+                try:
+                    safeSetCurDir(currentEntry.path)
+                    refresh()
+                    currentIndex = 0
+                except:
+                    err = "Cannot open directory"
+                    safeSetCurDir(prev)
+            elif currentEntry.info.kind == pcFile:
+                openFile(currentEntry.path)
+
     tabs.add(Tab(cd:getCurrentDir(), index:0))
     refresh()
     while true:
@@ -376,7 +409,10 @@ proc mainLoop(nb:var Nimbox) =
         tabs[currentTab].index = currentIndex
         redraw(currentDirEntries, currentIndex, selectedEntries,
                tabs, currentTab, showHidden, err, nb)
-        case getch():
+        let event = nb.pollEvent()
+        case event.kind:
+        of EventType.Key:
+            case event.ch:
             of 'q':
                 break
             of '!':
@@ -402,34 +438,15 @@ proc mainLoop(nb:var Nimbox) =
             of 'G':
                 currentIndex = currentDirEntries.high
             of 'j':
-                inc currentIndex
-                if currentIndex > currentDirEntries.high:
-                    currentIndex = 0
+                down()
             of 'k':
                 dec currentIndex
                 if currentIndex < 0:
                     currentIndex = currentDirEntries.high
             of 'h':
-                let prevDir = getCurrentDir()
-                if parentDir(getCurrentDir()) == "":
-                    safeSetCurDir("/")
-                else:
-                    safeSetCurDir(parentDir(getCurrentDir()))
-                refresh()
-                currentIndex = getIndexOfDir(currentDirEntries, prevDir)
+                left()
             of 'l':
-                if currentIndex >= 0:
-                    if currentEntry.info.kind == pcDir:
-                        let prev = getCurrentDir()
-                        try:
-                            safeSetCurDir(currentEntry.path)
-                            refresh()
-                            currentIndex = 0
-                        except:
-                            err = "Cannot open directory"
-                            safeSetCurDir(prev)
-                    elif currentEntry.info.kind == pcFile:
-                        openFile(currentEntry.path)
+                right()
             of '~':
                 safeSetCurDir(getHomeDir())
                 refresh()
@@ -495,7 +512,28 @@ proc mainLoop(nb:var Nimbox) =
                 currentDirEntries = startSearch(nb, showHidden)
                 currentIndex = 0
             else:
-                continue
+                discard
+            case event.sym:
+            of Enter:
+                right()
+            of Backspace:
+                left()
+            of Up:
+                up()
+            of Down:
+                down()
+            of Symbol.Left:
+                left()
+            of Symbol.Right:
+                right()
+            else:
+                discard
+        of EventType.None:
+            discard
+        of EventType.Resize:
+            discard
+        of EventType.Mouse:
+            discard
 
 when isMainModule:
     var nb = newNimbox()
