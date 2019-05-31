@@ -90,6 +90,11 @@ package manager. A C compiler (gcc, clang, etc.) or
 a C++ compiler is necessary for compiling the generated
 C/C++ code to binaries.
 
+Apart from that, these libraries are required:
+
+* `termbox-devel` or `libtermbox-dev` is required in order
+for the terminal user interface to work.
+
 ### Run-time
 
 | Dependency | Use |
