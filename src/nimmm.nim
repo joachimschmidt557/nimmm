@@ -421,12 +421,6 @@ proc mainLoop(nb:var Nimbox) =
             of '.':
                 showHidden = not showHidden
                 refresh()
-            of ' ':
-                if currentIndex >= 0:
-                    if not selectedEntries.contains(currentEntry.path):
-                        selectedEntries.incl(currentEntry.path)
-                    else:
-                        selectedEntries.excl(currentEntry.path)
             of 'a':
                 if currentIndex >= 0:
                     for entry in currentDirEntries:
@@ -518,6 +512,12 @@ proc mainLoop(nb:var Nimbox) =
                 right()
             of Backspace:
                 left()
+            of Space:
+                if currentIndex >= 0:
+                    if not selectedEntries.contains(currentEntry.path):
+                        selectedEntries.incl(currentEntry.path)
+                    else:
+                        selectedEntries.excl(currentEntry.path)
             of Up:
                 up()
             of Down:
@@ -533,7 +533,13 @@ proc mainLoop(nb:var Nimbox) =
         of EventType.Resize:
             discard
         of EventType.Mouse:
-            discard
+            case event.action:
+            of WheelUp:
+                up()
+            of WheelDown:
+                down()
+            else:
+                discard
 
 when isMainModule:
     var nb = newNimbox()
