@@ -434,9 +434,7 @@ proc mainLoop(nb:var Nimbox) =
             of 'j':
                 down()
             of 'k':
-                dec currentIndex
-                if currentIndex < 0:
-                    currentIndex = currentDirEntries.high
+                up()
             of 'h':
                 left()
             of 'l':
