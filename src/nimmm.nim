@@ -86,11 +86,6 @@ proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var N
                 entry.info.kind == pcLinkToDir
         pathWidth = nb.width() - paddingLeft
     nb.print(0, y,
-#        (if highlight: bgWhite else: bgBlack),
-#        (if highlight:
-#            fgBlack elif isDir: 
-#            fgYellow else:
-#            fgWhite),
         (if highlight: " -> " else: "    ") &
         (if selected: "+ " else: "  ") &
         (entry.info.lastWriteTime.format("yyyy-MM-dd HH:mm")) &
@@ -190,11 +185,9 @@ proc askYorN(question:string, nb:var Nimbox): bool =
     while true:
         case getCh():
             of 'y', 'Y':
-                result = true
-                break
+                return true
             of 'n', 'N':
-                result = false
-                break
+                return false
             else:
                 continue
 
@@ -384,7 +377,8 @@ proc mainLoop(nb:var Nimbox) =
         else:
             safeSetCurDir(parentDir(getCurrentDir()))
         refresh()
-        currentIndex = getIndexOfDir(currentDirEntries, prevDir)
+        if prevDir != "/":
+            currentIndex = getIndexOfDir(currentDirEntries, prevDir)
 
     proc right() =
         if currentIndex >= 0:
