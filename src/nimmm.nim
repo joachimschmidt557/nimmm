@@ -1,4 +1,4 @@
-import os, osproc, algorithm, times, strformat, sequtils, strutils, re, sets, noise, nimbox
+import os, osproc, algorithm, times, strformat, sequtils, strutils, re, sets, noise, nimbox, options
 
 type
     DirEntry = object
@@ -251,7 +251,6 @@ proc copyEntries(entries:HashSet[string], nb: var Nimbox) =
         files = paths.foldl(a & " " & b)
         dest  = getCurrentDir().safePath
         cmd = prog & args & files & " " & dest
-    stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
     discard execCmd(cmd)
     nb = newNimbox()
@@ -268,7 +267,6 @@ proc deleteEntries(entries:HashSet[string], nb:var Nimbox) =
         files = paths.foldl(a & " " & b)
         force = if askYorN("use force? [y/n]", nb): "-f " else: " "
         cmd = prog & args & force & files
-    stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
     discard execCmd(cmd)
     nb = newNimbox()
@@ -285,7 +283,6 @@ proc moveEntries(entries:HashSet[string], nb: var Nimbox) =
         files = paths.foldl(a & " " & b)
         dest  = getCurrentDir().safePath
         cmd = prog & args & files & " " & dest
-    stdout.writeLine("")
     stdout.writeLine(" -> " & cmd)
     discard execCmd(cmd)
     nb = newNimbox()
@@ -335,7 +332,7 @@ proc mainLoop(nb:var Nimbox) =
     var
         showHidden = false
         currentIndex = 0
-        currentDirEntries:seq[DirEntry]
+        currentEntries:seq[DirEntry]
         currentEntry:DirEntry
         selectedEntries = initSet[string]()
         tabs:seq[Tab]
@@ -344,12 +341,12 @@ proc mainLoop(nb:var Nimbox) =
 
     proc refresh() =
         err = ""
-        currentDirEntries = scan(showHidden)
-        if currentDirEntries.len > 0:
+        currentEntries = scan(showHidden)
+        if currentEntries.len > 0:
             if currentIndex < 0:
                 currentIndex = 0
-            elif currentIndex > currentDirEntries.high:
-                currentIndex = currentDirEntries.high
+            elif currentIndex > currentEntries.high:
+                currentIndex = currentEntries.high
         else:
             currentIndex = -1
          
@@ -363,11 +360,11 @@ proc mainLoop(nb:var Nimbox) =
     proc up() =
         dec currentIndex
         if currentIndex < 0:
-            currentIndex = currentDirEntries.high
+            currentIndex = currentEntries.high
 
     proc down() =
         inc currentIndex
-        if currentIndex > currentDirEntries.high:
+        if currentIndex > currentEntries.high:
             currentIndex = 0
 
     proc left() =
@@ -378,7 +375,7 @@ proc mainLoop(nb:var Nimbox) =
             safeSetCurDir(parentDir(getCurrentDir()))
         refresh()
         if prevDir != "/":
-            currentIndex = getIndexOfDir(currentDirEntries, prevDir)
+            currentIndex = getIndexOfDir(currentEntries, prevDir)
 
     proc right() =
         if currentIndex >= 0:
@@ -394,15 +391,18 @@ proc mainLoop(nb:var Nimbox) =
             elif currentEntry.info.kind == pcFile:
                 openFile(currentEntry.path)
 
+    # Initialize first tab
     tabs.add(Tab(cd:getCurrentDir(), index:0))
     refresh()
+
     while true:
-        if currentDirEntries.len > 0:
-            currentEntry = currentDirEntries[currentIndex]
+        if currentEntries.len > 0:
+            currentEntry = currentEntries[currentIndex]
         tabs[currentTab].cd = getCurrentDir()
         tabs[currentTab].index = currentIndex
-        redraw(currentDirEntries, currentIndex, selectedEntries,
+        redraw(currentEntries, currentIndex, selectedEntries,
                tabs, currentTab, showHidden, err, nb)
+
         let event = nb.pollEvent()
         case event.kind:
         of EventType.Key:
@@ -417,14 +417,14 @@ proc mainLoop(nb:var Nimbox) =
                 refresh()
             of 'a':
                 if currentIndex >= 0:
-                    for entry in currentDirEntries:
+                    for entry in currentEntries:
                         selectedEntries.incl(entry.path)
             of 's':
                 selectedEntries.clear()
             of 'g':
                 currentIndex = 0
             of 'G':
-                currentIndex = currentDirEntries.high
+                currentIndex = currentEntries.high
             of 'j':
                 down()
             of 'k':
@@ -495,7 +495,7 @@ proc mainLoop(nb:var Nimbox) =
                 selectedEntries.clear()
                 refresh()
             of '/':
-                currentDirEntries = startSearch(nb, showHidden)
+                currentEntries = startSearch(nb, showHidden)
                 currentIndex = 0
             else:
                 discard
