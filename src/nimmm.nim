@@ -124,7 +124,7 @@ proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:
     if lenSelected > 0: 
         nb.print(offsetSelected, y, selectedStr)
     if errMsg.len > 0:
-        nb.print(offsetErrMsg, y, " " & errMsg)
+        nb.print(offsetErrMsg, y, " " & errMsg, clrRed)
  
 proc redraw(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string, nb:var Nimbox) =
     nb.clear()
@@ -157,14 +157,21 @@ proc getIndexOfDir(entries:seq[DirEntry], dir:string): int =
     result = paths.binarySearch(dir, cmpIgnoreCase)
     if result < 0: result = 0
 
-proc scan(showHidden:bool): seq[DirEntry] =
+proc scan(showHidden:bool): tuple[entries: seq[DirEntry], error: bool] =
+    var
+        error = false
+        entries:seq[DirEntry]
     for kind, path in walkDir(getCurrentDir()):
         if showHidden or not isHidden(path):
-            result.add(DirEntry(path:path,
-                info:getFileInfo(path),
-                relative:extractFilename(path)))
-    result.sort do (x, y: DirEntry) -> int:
+            try:
+                entries.add(DirEntry(path:path,
+                    info:getFileInfo(path),
+                    relative:extractFilename(path)))
+            except:
+                error = true
+    entries.sort do (x, y: DirEntry) -> int:
         cmpIgnoreCase(x.path, y.path)
+    return (entries, error)
 
 proc search(pattern:string, showHidden:bool): seq[DirEntry] =
     let
@@ -332,27 +339,29 @@ proc mainLoop(nb:var Nimbox) =
     var
         showHidden = false
         currentIndex = 0
-        currentEntries:seq[DirEntry]
-        currentEntry:DirEntry
+        entries:seq[DirEntry]
         selectedEntries = initSet[string]()
         tabs:seq[Tab]
         currentTab = 0
         err = ""
 
     proc refresh() =
+        var scanResult = scan(showHidden)
         err = ""
-        currentEntries = scan(showHidden)
-        if currentEntries.len > 0:
+        entries = scanResult.entries
+        if scanResult.error:
+            err = "Some entries couldn't be displayed"
+        if entries.len > 0:
             if currentIndex < 0:
                 currentIndex = 0
-            elif currentIndex > currentEntries.high:
-                currentIndex = currentEntries.high
+            elif currentIndex > entries.high:
+                currentIndex = entries.high
         else:
             currentIndex = -1
          
-    proc switchTab(index:int) =
-        if index < tabs.len:
-            currentTab = index
+    proc switchTab(i:int) =
+        if i < tabs.len:
+            currentTab = i
             safeSetCurDir(tabs[currentTab].cd)
             currentIndex = tabs[currentTab].index
             refresh()
@@ -360,11 +369,11 @@ proc mainLoop(nb:var Nimbox) =
     proc up() =
         dec currentIndex
         if currentIndex < 0:
-            currentIndex = currentEntries.high
+            currentIndex = entries.high
 
     proc down() =
         inc currentIndex
-        if currentIndex > currentEntries.high:
+        if currentIndex > entries.high:
             currentIndex = 0
 
     proc left() =
@@ -375,32 +384,30 @@ proc mainLoop(nb:var Nimbox) =
             safeSetCurDir(parentDir(getCurrentDir()))
         refresh()
         if prevDir != "/":
-            currentIndex = getIndexOfDir(currentEntries, prevDir)
+            currentIndex = getIndexOfDir(entries, prevDir)
 
     proc right() =
         if currentIndex >= 0:
-            if currentEntry.info.kind == pcDir:
+            if entries[currentIndex].info.kind == pcDir:
                 let prev = getCurrentDir()
                 try:
-                    safeSetCurDir(currentEntry.path)
+                    safeSetCurDir(entries[currentIndex].path)
                     refresh()
                     currentIndex = 0
                 except:
                     err = "Cannot open directory"
                     safeSetCurDir(prev)
-            elif currentEntry.info.kind == pcFile:
-                openFile(currentEntry.path)
+            elif entries[currentIndex].info.kind == pcFile:
+                openFile(entries[currentIndex].path)
 
     # Initialize first tab
     tabs.add(Tab(cd:getCurrentDir(), index:0))
     refresh()
 
     while true:
-        if currentEntries.len > 0:
-            currentEntry = currentEntries[currentIndex]
         tabs[currentTab].cd = getCurrentDir()
         tabs[currentTab].index = currentIndex
-        redraw(currentEntries, currentIndex, selectedEntries,
+        redraw(entries, currentIndex, selectedEntries,
                tabs, currentTab, showHidden, err, nb)
 
         let event = nb.pollEvent()
@@ -417,14 +424,14 @@ proc mainLoop(nb:var Nimbox) =
                 refresh()
             of 'a':
                 if currentIndex >= 0:
-                    for entry in currentEntries:
+                    for entry in entries:
                         selectedEntries.incl(entry.path)
             of 's':
                 selectedEntries.clear()
             of 'g':
                 currentIndex = 0
             of 'G':
-                currentIndex = currentEntries.high
+                currentIndex = entries.high
             of 'j':
                 down()
             of 'k':
@@ -466,13 +473,13 @@ proc mainLoop(nb:var Nimbox) =
                 switchTab(9)
             of 'e':
                 if currentIndex >= 0:
-                    if currentEntry.info.kind == pcFile:
-                        editFile(currentEntry.path, nb)
+                    if entries[currentIndex].info.kind == pcFile:
+                        editFile(entries[currentIndex].path, nb)
                         refresh()
             of 'p':
                 if currentIndex >= 0:
-                    if currentEntry.info.kind == pcFile:
-                        viewFile(currentEntry.path, nb)
+                    if entries[currentIndex].info.kind == pcFile:
+                        viewFile(entries[currentIndex].path, nb)
             of 'f':
                 newFile(nb)
                 refresh()
@@ -480,7 +487,7 @@ proc mainLoop(nb:var Nimbox) =
                 newDir(nb)
                 refresh()
             of 'r':
-                rename(currentEntry.relative, nb)
+                rename(entries[currentIndex].relative, nb)
                 refresh()
             of 'P':
                 copyEntries(selectedEntries, nb)
@@ -495,7 +502,7 @@ proc mainLoop(nb:var Nimbox) =
                 selectedEntries.clear()
                 refresh()
             of '/':
-                currentEntries = startSearch(nb, showHidden)
+                entries = startSearch(nb, showHidden)
                 currentIndex = 0
             else:
                 discard
@@ -506,10 +513,10 @@ proc mainLoop(nb:var Nimbox) =
                 left()
             of Space:
                 if currentIndex >= 0:
-                    if not selectedEntries.contains(currentEntry.path):
-                        selectedEntries.incl(currentEntry.path)
+                    if not selectedEntries.contains(entries[currentIndex].path):
+                        selectedEntries.incl(entries[currentIndex].path)
                     else:
-                        selectedEntries.excl(currentEntry.path)
+                        selectedEntries.excl(entries[currentIndex].path)
             of Up:
                 up()
             of Down:
