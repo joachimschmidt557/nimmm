@@ -173,19 +173,26 @@ proc scan(showHidden:bool): tuple[entries: seq[DirEntry], error: bool] =
         cmpIgnoreCase(x.path, y.path)
     return (entries, error)
 
-proc search(pattern:string, showHidden:bool): seq[DirEntry] =
+proc search(pattern:string, showHidden:bool): tuple[entries: seq[DirEntry], error:bool] =
     let
         regex = re(pattern)
+    var
+        error = false
+        entries:seq[DirEntry]
     for kind, path in walkDir(getCurrentDir()):
         let
             relative = extractFilename(path)
         if relative.match(regex):
             if showHidden or not isHidden(path):
-                result.add(DirEntry(path:path,
-                    info:getFileInfo(path),
-                    relative:relative))
-    result.sort do (x, y: DirEntry) -> int:
+                try:
+                    entries.add(DirEntry(path:path,
+                        info:getFileInfo(path),
+                        relative:relative))
+                except:
+                    error = true
+    entries.sort do (x, y: DirEntry) -> int:
         cmpIgnoreCase(x.path, y.path)
+    return (entries, error)
 
 proc askYorN(question:string, nb:var Nimbox): bool =
     stdout.write(question)
@@ -322,7 +329,7 @@ proc rename(path:string, nb:var Nimbox) =
     discard execCmd(cmd & oldName & " " & newName.safePath)
     nb = newNimbox()
 
-proc startSearch(nb:var Nimbox, showHidden:bool): seq[DirEntry] =
+proc startSearch(nb:var Nimbox, showHidden:bool): tuple[entries:seq[DirEntry], error:bool] =
     nb.shutdown()
     let
         pattern = askString(" /", nb)
@@ -502,7 +509,10 @@ proc mainLoop(nb:var Nimbox) =
                 selectedEntries.clear()
                 refresh()
             of '/':
-                entries = startSearch(nb, showHidden)
+                let result = startSearch(nb, showHidden)
+                entries = result.entries
+                if result.error:
+                    err = "Some entries could not be displayed."
                 currentIndex = 0
             else:
                 discard
