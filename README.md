@@ -41,40 +41,42 @@ with environment variables just like `nnn` does.
 
 | Key | Function |
 | --- | --- |
-| `j` | next entry |
-| `k` | previous entry |
-| `h` | go to the parent directory |
-| `l` | navigate to directory / open file |
-| `g` | first entry |
-| `G` | last entry |
-| `~` | go to home directory |
+| <kbd>j</kbd> | next entry |
+| <kbd>k</kbd> | previous entry |
+| <kbd>h</kbd> | go to the parent directory |
+| <kbd>l</kbd> | navigate to directory / open file |
+| <kbd>g</kbd> | first entry |
+| <kbd>G</kbd> | last entry |
+| <kbd>~</kbd> | go to home directory |
+| <kbd>/</kbd> | start searching |
+| <kbd>Esc</kbd> | stop searching |
 
 ### File operations
 
 | Key | Function |
 | --- | --- |
-| `e` | edit file in `$EDITOR` |
-| `p` | view file in `$PAGER` |
-| `r` | rename file/directory |
+| <kbd>e</kbd> | edit file in `$EDITOR` |
+| <kbd>p</kbd> | view file in `$PAGER` |
+| <kbd>r</kbd> | rename file/directory |
 
 ### Selections
 
 | Key | Function |
 | --- | --- |
-| `Space` | select / deselect current entry |
-| `a` | select all entries in current directory |
-| `s` | clear selection |
-| `X` | delete selected entries |
-| `P` | copy selected entries |
-| `V` | move selected entries |
+| <kbd>Space</kbd> | select / deselect current entry |
+| <kbd>a</kbd> | select all entries in current directory |
+| <kbd>s</kbd> | clear selection |
+| <kbd>X</kbd> | delete selected entries |
+| <kbd>P</kbd> | copy selected entries |
+| <kbd>V</kbd> | move selected entries |
 
 ### Tabs
 
 | Key | Function |
 | --- | --- |
-| `t` | new tab |
-| `w` | close tab |
-| `1`..`0` | go to tab 1..10 |
+| <kbd>t</kbd> | new tab |
+| <kbd>w</kbd> | close tab |
+| <kbd>1</kbd>..<kbd>0</kbd> | go to tab 1..10 |
 
 ## ToDo
 

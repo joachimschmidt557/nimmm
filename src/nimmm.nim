@@ -535,6 +535,8 @@ proc mainLoop(nb:var Nimbox) =
                 left()
             of Symbol.Right:
                 right()
+            of Escape:
+                refresh()
             else:
                 discard
         of EventType.None:
