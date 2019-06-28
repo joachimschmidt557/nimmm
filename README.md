@@ -34,8 +34,8 @@ with environment variables just like `nnn` does.
 
 | Key | Function |
 | --- | --- |
-| `q` | quit |
-| `!` | spawn shell in current directory |
+| <kbd>q</kbd> | quit |
+| <kbd>!</kbd> | spawn shell in current directory |
 
 ### Navigation
 
