@@ -2,9 +2,6 @@ import os, osproc, nimbox, sets, sequtils
 
 import interactions
 
-proc safePath(path:string):string = 
-    "\"" & path & "\""
-
 proc editFile*(file:string, nb:var Nimbox) =
     const
         fallback = "vi"

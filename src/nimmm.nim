@@ -19,7 +19,10 @@ proc spawnShell(nb:var Nimbox) =
     stdout.writeLine(r" ### nimmm ###")
     stdout.writeLine(r" #############")
     stdout.writeLine("")
-    discard execCmd(getEnv("SHELL", fallback))
+    let process = startProcess(getEnv("SHELL", fallback),
+        options = {poUsePath, poParentStreams, poInteractive})
+    let exitCode = process.waitForExit()
+    process.close()
     nb = newNimbox()
 
 proc startSearch(nb:var Nimbox, showHidden:bool): tuple[entries:seq[DirEntry], error:bool] =
