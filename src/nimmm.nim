@@ -64,8 +64,9 @@ proc openFile(file:string) =
         fallback = "xdg-open"
     let
         opener = getEnv("NIMMM_OPEN", fallback)
-    discard startProcess(opener & " " & file,
-        options = {poStdErrToStdOut, poUsePath, poEvalCommand})
+    discard startProcess(opener,
+        args = @[file],
+        options = {poStdErrToStdOut, poUsePath})
 
 proc copyEntries(entries:HashSet[string], nb: var Nimbox) =
     const
