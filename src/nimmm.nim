@@ -1,32 +1,12 @@
-import os, osproc, algorithm, sequtils, strutils, re, sets, noise, nimbox, options
+import os, osproc, algorithm, sequtils, strutils, re, sets, nimbox, options
 
-import scan, draw
+import scan, draw, fsoperations, interactions
 
 proc getIndexOfDir(entries:seq[DirEntry], dir:string): int =
     let
         paths = entries.mapIt(it.path)
     result = paths.binarySearch(dir, cmpIgnoreCase)
     if result < 0: result = 0
-
-proc askYorN(question:string, nb:var Nimbox): bool =
-    stdout.write(question)
-    while true:
-        case getCh():
-            of 'y', 'Y':
-                return true
-            of 'n', 'N':
-                return false
-            else:
-                continue
-
-proc askString(question:string, nb:var Nimbox, preload=""): string =
-    var noise = Noise.init()
-    noise.preloadBuffer(preload)    
-    noise.setPrompt(question)
-    let ok = noise.readLine()
-
-    if not ok: return ""
-    return noise.getLine
             
 proc spawnShell(nb:var Nimbox) =
     const
@@ -40,108 +20,6 @@ proc spawnShell(nb:var Nimbox) =
     stdout.writeLine(r" #############")
     stdout.writeLine("")
     discard execCmd(getEnv("SHELL", fallback))
-    nb = newNimbox()
-
-proc safePath(path:string):string = 
-    "\"" & path & "\""
-
-proc editFile(file:string, nb:var Nimbox) =
-    const
-        fallback = "vi"
-    nb.shutdown()
-    discard execCmd(getEnv("EDITOR", fallback) & " " & file)
-    nb = newNimbox()
-
-proc viewFile(file:string, nb:var Nimbox) =
-    const
-        fallback = "/bin/less"
-    nb.shutdown()
-    discard execCmd(getEnv("PAGER", fallback) & " " & file)
-    nb = newNimbox()
-
-proc openFile(file:string) =
-    const
-        fallback = "xdg-open"
-    let
-        opener = getEnv("NIMMM_OPEN", fallback)
-    discard startProcess(opener,
-        args = @[file],
-        options = {poStdErrToStdOut, poUsePath})
-
-proc copyEntries(entries:HashSet[string], nb: var Nimbox) =
-    const
-        prog = "cp"
-        args = " -r -i "
-    if entries.len < 1: return
-    nb.shutdown()
-    let
-        entriesSeq = toSeq(entries.items)
-        paths = entriesSeq.map(safePath)
-        files = paths.foldl(a & " " & b)
-        dest  = getCurrentDir().safePath
-        cmd = prog & args & files & " " & dest
-    stdout.writeLine(" -> " & cmd)
-    discard execCmd(cmd)
-    nb = newNimbox()
-
-proc deleteEntries(entries:HashSet[string], nb:var Nimbox) =
-    const
-        prog = "rm"
-        args = " -r -i "
-    if entries.len < 1: return
-    nb.shutdown()
-    let
-        entriesSeq = toSeq(entries.items)
-        paths = entriesSeq.map(safePath)
-        files = paths.foldl(a & " " & b)
-        force = if askYorN("use force? [y/n]", nb): "-f " else: " "
-        cmd = prog & args & force & files
-    stdout.writeLine(" -> " & cmd)
-    discard execCmd(cmd)
-    nb = newNimbox()
-
-proc moveEntries(entries:HashSet[string], nb: var Nimbox) =
-    const
-        prog = "mv"
-        args = " -i "
-    if entries.len < 1: return
-    nb.shutdown()
-    let
-        entriesSeq = toSeq(entries.items)
-        paths = entriesSeq.map(safePath)
-        files = paths.foldl(a & " " & b)
-        dest  = getCurrentDir().safePath
-        cmd = prog & args & files & " " & dest
-    stdout.writeLine(" -> " & cmd)
-    discard execCmd(cmd)
-    nb = newNimbox()
-
-proc newFile(nb:var Nimbox) =
-    const
-        cmd = "touch "
-    nb.shutdown()
-    let
-        name = askString(" -> " & cmd, nb)
-    discard execCmd(cmd & name)
-    nb = newNimbox()
-
-proc newDir(nb:var Nimbox) =
-    const
-        cmd = "mkdir "
-    nb.shutdown()
-    let
-        name = askString(" -> " & cmd, nb)
-    discard execCmd(cmd & name)
-    nb = newNimbox()
-
-proc rename(path:string, nb:var Nimbox) =
-    const
-        cmd = "mv "
-    nb.shutdown()
-    let
-        oldName = path.safePath
-        newName = askString(" -> " & cmd & oldName & " ", nb, path)
-    discard execCmd(cmd & oldName & " " & newName.safePath)
     nb = newNimbox()
 
 proc startSearch(nb:var Nimbox, showHidden:bool): tuple[entries:seq[DirEntry], error:bool] =
