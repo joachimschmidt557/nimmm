@@ -34,7 +34,7 @@ proc safeSetCurDir(path:string) =
 
 proc mainLoop(nb:var Nimbox) =
     var
-        showHidden = false
+        s = initState()
         currentIndex = 0
         entries:seq[DirEntry]
         selectedEntries = initSet[string]()
@@ -43,7 +43,7 @@ proc mainLoop(nb:var Nimbox) =
         err = ""
 
     proc refresh() =
-        var scanResult = scan(showHidden)
+        var scanResult = scan(s.showHidden)
         err = ""
         entries = scanResult.entries
         if scanResult.error:
@@ -105,7 +105,7 @@ proc mainLoop(nb:var Nimbox) =
         tabs[currentTab].cd = getCurrentDir()
         tabs[currentTab].index = currentIndex
         redraw(entries, currentIndex, selectedEntries,
-               tabs, currentTab, showHidden, err, nb)
+               tabs, currentTab, s.showHidden, err, nb)
 
         let event = nb.pollEvent()
         case event.kind:
@@ -117,7 +117,7 @@ proc mainLoop(nb:var Nimbox) =
                 spawnShell(nb)
                 refresh()
             of '.':
-                showHidden = not showHidden
+                s.showHidden = not s.showHidden
                 refresh()
             of 'a':
                 if currentIndex >= 0:
@@ -199,7 +199,7 @@ proc mainLoop(nb:var Nimbox) =
                 selectedEntries.clear()
                 refresh()
             of '/':
-                let result = startSearch(nb, showHidden)
+                let result = startSearch(nb, s.showHidden)
                 entries = result.entries
                 if result.error:
                     err = "Some entries could not be displayed."
