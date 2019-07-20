@@ -1,11 +1,6 @@
 import times, sets, os, strformat, nimbox, strutils, sequtils, algorithm
 
-import scan
-
-type
-    Tab* = object
-        cd*: string
-        index*: int
+import core
 
 proc sizeToString(size:BiggestInt): string =
     let siz = size.int

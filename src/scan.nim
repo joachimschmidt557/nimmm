@@ -1,10 +1,6 @@
 import os, re, algorithm, strutils
 
-type
-    DirEntry* = object
-        path*: string
-        relative*: string
-        info*: FileInfo
+import core
 
 proc scan*(showHidden:bool): tuple[entries: seq[DirEntry], error: bool] =
     var

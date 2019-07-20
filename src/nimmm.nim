@@ -1,6 +1,6 @@
 import os, osproc, sequtils, strutils, re, sets, nimbox, options
 
-import scan, draw, fsoperations, interactions
+import core, scan, draw, fsoperations, interactions
             
 proc spawnShell(nb:var Nimbox) =
     const
