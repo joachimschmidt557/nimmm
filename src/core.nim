@@ -22,10 +22,13 @@ proc initState*(): State =
           currentTab: 0,
           showHidden: false,
           entries: @[],
-          selected: initSet[string]())
+          selected: initHashSet[string]())
 
 proc currentIndex*(s:State): int =
     s.tabs[s.currentTab].index
+
+proc `currentIndex=`*(s:var State, i:int) =
+    s.tabs[s.currentTab].index = i
 
 proc currentEntry*(s:State): DirEntry =
     s.entries[s.currentIndex]

@@ -35,43 +35,38 @@ proc safeSetCurDir(path:string) =
 proc mainLoop(nb:var Nimbox) =
     var
         s = initState()
-        currentIndex = 0
-        entries:seq[DirEntry]
-        selectedEntries = initSet[string]()
-        tabs:seq[Tab]
-        currentTab = 0
         err = ""
 
     proc refresh() =
         var scanResult = scan(s.showHidden)
         err = ""
-        entries = scanResult.entries
+        s.entries = scanResult.entries
         if scanResult.error:
             err = "Some entries couldn't be displayed"
-        if entries.len > 0:
-            if currentIndex < 0:
-                currentIndex = 0
-            elif currentIndex > entries.high:
-                currentIndex = entries.high
+        if s.entries.len > 0:
+            if s.currentIndex < 0:
+                s.currentIndex = 0
+            elif s.currentIndex > s.entries.high:
+                s.currentIndex = s.entries.high
         else:
-            currentIndex = -1
+            s.currentIndex = -1
          
     proc switchTab(i:int) =
-        if i < tabs.len:
-            currentTab = i
-            safeSetCurDir(tabs[currentTab].cd)
-            currentIndex = tabs[currentTab].index
+        if i < s.tabs.len:
+            s.currentTab = i
+            safeSetCurDir(s.tabs[s.currentTab].cd)
+            s.currentIndex = s.tabs[s.currentTab].index
             refresh()
 
     proc up() =
-        dec currentIndex
-        if currentIndex < 0:
-            currentIndex = entries.high
+        s.currentIndex = s.currentIndex - 1
+        if s.currentIndex < 0:
+            s.currentIndex = s.entries.high
 
     proc down() =
-        inc currentIndex
-        if currentIndex > entries.high:
-            currentIndex = 0
+        s.currentIndex = s.currentIndex + 1
+        if s.currentIndex > s.entries.high:
+            s.currentIndex = 0
 
     proc left() =
         let prevDir = getCurrentDir()
@@ -81,31 +76,29 @@ proc mainLoop(nb:var Nimbox) =
             safeSetCurDir(parentDir(getCurrentDir()))
         refresh()
         if prevDir != "/":
-            currentIndex = getIndexOfDir(entries, prevDir)
+            s.currentIndex = getIndexOfDir(s.entries, prevDir)
 
     proc right() =
-        if currentIndex >= 0:
-            if entries[currentIndex].info.kind == pcDir:
+        if s.currentIndex >= 0:
+            if s.currentEntry.info.kind == pcDir:
                 let prev = getCurrentDir()
                 try:
-                    safeSetCurDir(entries[currentIndex].path)
+                    safeSetCurDir(s.currentEntry.path)
                     refresh()
-                    currentIndex = 0
+                    s.currentIndex = 0
                 except:
                     err = "Cannot open directory"
                     safeSetCurDir(prev)
-            elif entries[currentIndex].info.kind == pcFile:
-                openFile(entries[currentIndex].path)
+            elif s.currentEntry.info.kind == pcFile:
+                openFile(s.currentEntry.path)
 
-    # Initialize first tab
-    tabs.add(Tab(cd:getCurrentDir(), index:0))
     refresh()
 
     while true:
-        tabs[currentTab].cd = getCurrentDir()
-        tabs[currentTab].index = currentIndex
-        redraw(entries, currentIndex, selectedEntries,
-               tabs, currentTab, s.showHidden, err, nb)
+        s.tabs[s.currentTab].cd = getCurrentDir()
+        s.tabs[s.currentTab].index = s.currentIndex
+        redraw(s.entries, s.currentIndex, s.selected,
+               s.tabs, s.currentTab, s.showHidden, err, nb)
 
         let event = nb.pollEvent()
         case event.kind:
@@ -120,15 +113,15 @@ proc mainLoop(nb:var Nimbox) =
                 s.showHidden = not s.showHidden
                 refresh()
             of 'a':
-                if currentIndex >= 0:
-                    for entry in entries:
-                        selectedEntries.incl(entry.path)
+                if s.currentIndex >= 0:
+                    for entry in s.entries:
+                        s.selected.incl(entry.path)
             of 's':
-                selectedEntries.clear()
+                s.selected.clear()
             of 'g':
-                currentIndex = 0
+                s.currentIndex = 0
             of 'G':
-                currentIndex = entries.high
+                s.currentIndex = s.entries.high
             of 'j':
                 down()
             of 'k':
@@ -140,14 +133,14 @@ proc mainLoop(nb:var Nimbox) =
             of '~':
                 safeSetCurDir(getHomeDir())
                 refresh()
-                currentIndex = 0
+                s.currentIndex = 0
             of 't':
-                tabs.add(Tab(cd:getCurrentDir(), index:currentIndex))
-                switchTab(tabs.high)
+                s.tabs.add(Tab(cd:getCurrentDir(), index:s.currentIndex))
+                switchTab(s.tabs.high)
             of 'w':
-                if tabs.len > 1:
-                    tabs.del(currentTab)
-                switchTab(max(0, currentTab - 1))
+                if s.tabs.len > 1:
+                    s.tabs.del(s.currentTab)
+                switchTab(max(0, s.currentTab - 1))
             of '1':
                 switchTab(0)
             of '2':
@@ -169,14 +162,14 @@ proc mainLoop(nb:var Nimbox) =
             of '0':
                 switchTab(9)
             of 'e':
-                if currentIndex >= 0:
-                    if entries[currentIndex].info.kind == pcFile:
-                        editFile(entries[currentIndex].path, nb)
+                if s.currentIndex >= 0:
+                    if s.currentEntry.info.kind == pcFile:
+                        editFile(s.currentEntry.path, nb)
                         refresh()
             of 'p':
-                if currentIndex >= 0:
-                    if entries[currentIndex].info.kind == pcFile:
-                        viewFile(entries[currentIndex].path, nb)
+                if s.currentIndex >= 0:
+                    if s.currentEntry.info.kind == pcFile:
+                        viewFile(s.currentEntry.path, nb)
             of 'f':
                 newFile(nb)
                 refresh()
@@ -184,26 +177,26 @@ proc mainLoop(nb:var Nimbox) =
                 newDir(nb)
                 refresh()
             of 'r':
-                rename(entries[currentIndex].relative, nb)
+                rename(s.currentEntry.relative, nb)
                 refresh()
             of 'P':
-                copyEntries(selectedEntries, nb)
-                selectedEntries.clear()
+                copyEntries(s.selected, nb)
+                s.selected.clear()
                 refresh()
             of 'V':
-                moveEntries(selectedEntries, nb)
-                selectedEntries.clear()
+                moveEntries(s.selected, nb)
+                s.selected.clear()
                 refresh()
             of 'X':
-                deleteEntries(selectedEntries, nb)
-                selectedEntries.clear()
+                deleteEntries(s.selected, nb)
+                s.selected.clear()
                 refresh()
             of '/':
                 let result = startSearch(nb, s.showHidden)
-                entries = result.entries
+                s.entries = result.entries
                 if result.error:
                     err = "Some entries could not be displayed."
-                currentIndex = 0
+                s.currentIndex = 0
             else:
                 discard
             case event.sym:
@@ -212,11 +205,11 @@ proc mainLoop(nb:var Nimbox) =
             of Backspace:
                 left()
             of Space:
-                if currentIndex >= 0:
-                    if not selectedEntries.contains(entries[currentIndex].path):
-                        selectedEntries.incl(entries[currentIndex].path)
+                if s.currentIndex >= 0:
+                    if not s.selected.contains(s.currentEntry.path):
+                        s.selected.incl(s.currentEntry.path)
                     else:
-                        selectedEntries.excl(entries[currentIndex].path)
+                        s.selected.excl(s.currentEntry.path)
             of Up:
                 up()
             of Down:
