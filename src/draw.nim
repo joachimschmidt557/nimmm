@@ -1,4 +1,4 @@
-import times, sets, os, strformat, nimbox
+import times, sets, os, strformat, nimbox, strutils, sequtils, algorithm
 
 import scan
 
@@ -24,6 +24,12 @@ proc sizeToString(size:BiggestInt): string =
         result = fmt"{siz/g:7}" & "G"
     else:
         result = fmt"{siz/t:7}" & "T"
+
+proc getIndexOfDir*(entries:seq[DirEntry], dir:string): int =
+    let
+        paths = entries.mapIt(it.path)
+    result = paths.binarySearch(dir, cmpIgnoreCase)
+    if result < 0: result = 0
 
 proc getTopIndex(lenEntries:int, index:int, nb:Nimbox): int =
     let

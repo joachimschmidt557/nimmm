@@ -1,12 +1,6 @@
-import os, osproc, algorithm, sequtils, strutils, re, sets, nimbox, options
+import os, osproc, sequtils, strutils, re, sets, nimbox, options
 
 import scan, draw, fsoperations, interactions
-
-proc getIndexOfDir(entries:seq[DirEntry], dir:string): int =
-    let
-        paths = entries.mapIt(it.path)
-    result = paths.binarySearch(dir, cmpIgnoreCase)
-    if result < 0: result = 0
             
 proc spawnShell(nb:var Nimbox) =
     const
