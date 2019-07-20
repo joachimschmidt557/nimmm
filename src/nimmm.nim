@@ -48,8 +48,6 @@ proc mainLoop(nb:var Nimbox) =
                 s.currentIndex = 0
             elif s.currentIndex > s.entries.high:
                 s.currentIndex = s.entries.high
-        else:
-            s.currentIndex = -1
          
     proc switchTab(i:int) =
         if i < s.tabs.len:
@@ -79,7 +77,7 @@ proc mainLoop(nb:var Nimbox) =
             s.currentIndex = getIndexOfDir(s.entries, prevDir)
 
     proc right() =
-        if s.currentIndex >= 0:
+        if not s.empty:
             if s.currentEntry.info.kind == pcDir:
                 let prev = getCurrentDir()
                 try:
@@ -96,7 +94,6 @@ proc mainLoop(nb:var Nimbox) =
 
     while true:
         s.tabs[s.currentTab].cd = getCurrentDir()
-        s.tabs[s.currentTab].index = s.currentIndex
         redraw(s.entries, s.currentIndex, s.selected,
                s.tabs, s.currentTab, s.showHidden, err, nb)
 
@@ -113,7 +110,7 @@ proc mainLoop(nb:var Nimbox) =
                 s.showHidden = not s.showHidden
                 refresh()
             of 'a':
-                if s.currentIndex >= 0:
+                if not s.empty:
                     for entry in s.entries:
                         s.selected.incl(entry.path)
             of 's':
@@ -162,12 +159,12 @@ proc mainLoop(nb:var Nimbox) =
             of '0':
                 switchTab(9)
             of 'e':
-                if s.currentIndex >= 0:
+                if not s.empty:
                     if s.currentEntry.info.kind == pcFile:
                         editFile(s.currentEntry.path, nb)
                         refresh()
             of 'p':
-                if s.currentIndex >= 0:
+                if not s.empty:
                     if s.currentEntry.info.kind == pcFile:
                         viewFile(s.currentEntry.path, nb)
             of 'f':
@@ -205,7 +202,7 @@ proc mainLoop(nb:var Nimbox) =
             of Backspace:
                 left()
             of Space:
-                if s.currentIndex >= 0:
+                if not s.empty:
                     if not s.selected.contains(s.currentEntry.path):
                         s.selected.incl(s.currentEntry.path)
                     else:
