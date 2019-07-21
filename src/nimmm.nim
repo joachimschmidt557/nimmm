@@ -53,7 +53,6 @@ proc mainLoop(nb:var Nimbox) =
         if i < s.tabs.len:
             s.currentTab = i
             safeSetCurDir(s.tabs[s.currentTab].cd)
-            s.currentIndex = s.tabs[s.currentTab].index
             refresh()
 
     proc up() =
@@ -94,8 +93,7 @@ proc mainLoop(nb:var Nimbox) =
 
     while true:
         s.tabs[s.currentTab].cd = getCurrentDir()
-        redraw(s.entries, s.currentIndex, s.selected,
-               s.tabs, s.currentTab, s.showHidden, err, nb)
+        redraw(s, err, nb)
 
         let event = nb.pollEvent()
         case event.kind:
@@ -110,9 +108,8 @@ proc mainLoop(nb:var Nimbox) =
                 s.showHidden = not s.showHidden
                 refresh()
             of 'a':
-                if not s.empty:
-                    for entry in s.entries:
-                        s.selected.incl(entry.path)
+                for entry in s.entries:
+                    s.selected.incl(entry.path)
             of 's':
                 s.selected.clear()
             of 'g':

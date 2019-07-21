@@ -125,9 +125,15 @@ proc drawFooter(index:int, lenEntries:int, lenSelected:int, hidden:bool, errMsg:
     if errMsg.len > 0:
         nb.print(offsetErrMsg, y, " " & errMsg, clrRed)
  
-proc redraw*(entries:seq[DirEntry], index:int, selectedEntries:HashSet[string], tabs:seq[Tab], currentTab:int, hidden:bool, errMsg:string, nb:var Nimbox) =
+proc redraw*(s:State, errMsg:string, nb:var Nimbox) =
     nb.clear()
     let
+        entries = s.entries
+        index = s.currentIndex
+        selectedEntries = s.selected
+        tabs = s.tabs
+        currentTab = s.currentTab
+        hidden = s.showHidden
         topIndex = getTopIndex(entries.len, index, nb)
         bottomIndex = getBottomIndex(entries.len, topIndex, nb)
 
