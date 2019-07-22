@@ -111,6 +111,14 @@ for the terminal user interface to work.
 
 ### From source
 
-    $ git clone https://github.com/joachimschmidt557/nimmm
-    $ cd nimmm
-    $ nimble install
+```shell
+$ git clone https://github.com/joachimschmidt557/nimmm
+$ cd nimmm
+$ nimble install
+```
+
+### With nimble
+
+```shell
+$ nimble install nimmm
+```
