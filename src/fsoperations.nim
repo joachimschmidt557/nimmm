@@ -113,7 +113,7 @@ proc newDir*(nb:var Nimbox) =
 
 proc rename*(path:string, nb:var Nimbox) =
     const
-        cmd = "mv "
+        cmd = "mv"
     nb.shutdown()
     let
         oldName = path
