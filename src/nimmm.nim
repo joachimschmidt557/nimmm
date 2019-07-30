@@ -13,10 +13,13 @@ proc spawnShell(nb:var Nimbox) =
     stdout.writeLine(r" ### nimmm ###")
     stdout.writeLine(r" #############")
     stdout.writeLine("")
-    let process = startProcess(getEnv("SHELL", fallback),
-        options = {poUsePath, poParentStreams, poInteractive})
-    let exitCode = process.waitForExit()
-    process.close()
+    try:
+        let process = startProcess(getEnv("SHELL", fallback),
+            options = {poUsePath, poParentStreams, poInteractive})
+        let exitCode = process.waitForExit()
+        process.close()
+    except:
+        discard
     nb = newNimbox()
 
 proc startSearch(nb:var Nimbox, showHidden:bool): tuple[entries:seq[DirEntry], error:bool] =
@@ -26,11 +29,12 @@ proc startSearch(nb:var Nimbox, showHidden:bool): tuple[entries:seq[DirEntry], e
     result = search(pattern, showHidden)
     nb = newNimbox()
 
-proc safeSetCurDir(path:string) =
+proc safeSetCurDir(s:var State, path:string) =
     var safeDir = path
     while not existsDir(safeDir):
         safeDir = safeDir.parentDir
     setCurrentDir(safeDir)
+    s.tabs[s.currentTab].cd = getCurrentDir()
 
 proc mainLoop(nb:var Nimbox) =
     var
@@ -52,7 +56,7 @@ proc mainLoop(nb:var Nimbox) =
     proc switchTab(i:int) =
         if i < s.tabs.len:
             s.currentTab = i
-            safeSetCurDir(s.tabs[s.currentTab].cd)
+            safeSetCurDir(s, s.tabs[s.currentTab].cd)
             refresh()
 
     proc up() =
@@ -68,9 +72,9 @@ proc mainLoop(nb:var Nimbox) =
     proc left() =
         let prevDir = getCurrentDir()
         if parentDir(getCurrentDir()) == "":
-            safeSetCurDir("/")
+            safeSetCurDir(s, "/")
         else:
-            safeSetCurDir(parentDir(getCurrentDir()))
+            safeSetCurDir(s, parentDir(getCurrentDir()))
         refresh()
         if prevDir != "/":
             s.currentIndex = getIndexOfDir(s.entries, prevDir)
@@ -80,19 +84,18 @@ proc mainLoop(nb:var Nimbox) =
             if s.currentEntry.info.kind == pcDir:
                 let prev = getCurrentDir()
                 try:
-                    safeSetCurDir(s.currentEntry.path)
+                    safeSetCurDir(s, s.currentEntry.path)
                     refresh()
                     s.currentIndex = 0
                 except:
                     err = "Cannot open directory"
-                    safeSetCurDir(prev)
+                    safeSetCurDir(s, prev)
             elif s.currentEntry.info.kind == pcFile:
                 openFile(s.currentEntry.path)
 
     refresh()
 
     while true:
-        s.tabs[s.currentTab].cd = getCurrentDir()
         redraw(s, err, nb)
 
         let event = nb.pollEvent()
@@ -125,7 +128,7 @@ proc mainLoop(nb:var Nimbox) =
             of 'l':
                 right()
             of '~':
-                safeSetCurDir(getHomeDir())
+                safeSetCurDir(s, getHomeDir())
                 refresh()
                 s.currentIndex = 0
             of 't':

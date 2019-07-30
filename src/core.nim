@@ -35,7 +35,7 @@ proc currentIndex*(s:State): int =
 
 proc `currentIndex=`*(s:var State, i:int) =
     ## Sets the current index, basically sugar for
-    ## setting the current index of the currnet tab
+    ## setting the current index of the current tab
     s.tabs[s.currentTab].index = i
 
 proc currentEntry*(s:State): DirEntry =
