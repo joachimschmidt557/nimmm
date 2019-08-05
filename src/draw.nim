@@ -84,9 +84,8 @@ proc lsColorToNimboxColor(style:style.Style): nimbox.Color =
         of c8White: return clrWhite
     else: return clrWhite
 
-proc getFgColor(entry:DirEntry): nimbox.Color =
+proc getFgColor(entry:DirEntry, lsc:LsColors): nimbox.Color =
     let
-        lsc = parseLsColorsEnv()
         sty = lsc.styleForPath(entry.path)
     sty.lsColorToNimboxColor()
 
@@ -98,13 +97,12 @@ proc lsColorToNimboxStyle(sty:style.Style): nimbox.Style =
 
     return styNone
 
-proc getStyle(entry:DirEntry): nimbox.Style =
+proc getStyle(entry:DirEntry, lsc:LsColors): nimbox.Style =
     let
-        lsc = parseLsColorsEnv()
         sty = lsc.styleForPath(entry.path)
     sty.lsColorToNimboxStyle()
 
-proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var Nimbox) =
+proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, lsc:LsColors, nb:var Nimbox) =
     const
         paddingLeft = 32
     let
@@ -120,9 +118,9 @@ proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var N
             "       /" else: sizeToString(entry.info.size)) &
         " " &
         entry.relative.formatPath(pathWidth),
-        (if highlight: clrBlack else: getFgColor(entry)),
+        (if highlight: clrBlack else: getFgColor(entry, lsc)),
         (if highlight: clrWhite else: clrBlack),
-        (if highlight: styBold else: getStyle(entry)))
+        (if highlight: styBold else: getStyle(entry, lsc)))
 
 proc drawHeader(numTabs:int, currentTab:int, nb:var Nimbox) =
     let
@@ -161,6 +159,7 @@ proc redraw*(s:State, errMsg:string, nb:var Nimbox) =
         tabs = s.tabs
         currentTab = s.currentTab
         hidden = s.showHidden
+        lsc = parseLsColorsEnv()
         topIndex = getTopIndex(entries.len, index, nb)
         bottomIndex = getBottomIndex(entries.len, topIndex, nb)
 
@@ -175,6 +174,7 @@ proc redraw*(s:State, errMsg:string, nb:var Nimbox) =
                     i-topIndex+2,
                     (i == index),
                     (selectedEntries.contains(entry.path)),
+                    lsc,
                     nb)
 
     if nb.height() > 4:
