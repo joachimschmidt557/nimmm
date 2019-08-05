@@ -73,22 +73,36 @@ proc lsColorToNimboxColor(style:style.Style): nimbox.Color =
     let c = style.fg.get
     case c.kind
     of ck8:
-      case c.ck8Val
-      of c8Black: return clrBlack
-      of c8Red: return clrRed
-      of c8Green: return clrGreen
-      of c8Yellow: return clrYellow
-      of c8Blue: return clrBlue
-      of c8Magenta: return clrMagenta
-      of c8Cyan: return clrCyan
-      of c8White: return clrWhite
+        case c.ck8Val
+        of c8Black: return clrBlack
+        of c8Red: return clrRed
+        of c8Green: return clrGreen
+        of c8Yellow: return clrYellow
+        of c8Blue: return clrBlue
+        of c8Magenta: return clrMagenta
+        of c8Cyan: return clrCyan
+        of c8White: return clrWhite
     else: return clrWhite
 
 proc getFgColor(entry:DirEntry): nimbox.Color =
     let
         lsc = parseLsColorsEnv()
         sty = lsc.styleForPath(entry.path)
-    sty.lsColorToNimboxColor
+    sty.lsColorToNimboxColor()
+
+proc lsColorToNimboxStyle(sty:style.Style): nimbox.Style =
+    let font = sty.font
+
+    if font.bold: return styBold
+    if font.underline: return styUnderline
+
+    return styNone
+
+proc getStyle(entry:DirEntry): nimbox.Style =
+    let
+        lsc = parseLsColorsEnv()
+        sty = lsc.styleForPath(entry.path)
+    sty.lsColorToNimboxStyle()
 
 proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var Nimbox) =
     const
@@ -108,7 +122,7 @@ proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var N
         entry.relative.formatPath(pathWidth),
         (if highlight: clrBlack else: getFgColor(entry)),
         (if highlight: clrWhite else: clrBlack),
-        (if highlight or isDir: styBold else: styNone))
+        (if highlight: styBold else: getStyle(entry)))
 
 proc drawHeader(numTabs:int, currentTab:int, nb:var Nimbox) =
     let
