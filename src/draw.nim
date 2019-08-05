@@ -1,4 +1,7 @@
-import times, sets, os, strformat, nimbox, strutils, sequtils, algorithm
+import times, sets, os, strformat, nimbox, strutils, sequtils, algorithm, options
+
+import lscolors
+import lscolors/style
 
 import core
 
@@ -64,18 +67,28 @@ proc formatPath(path:string, length:int): string =
         result = path
         result.setLen(length)
 
-proc getFgColor(entry:DirEntry):Color =
-    if entry.info.kind == pcDir:
-        clrYellow
-    elif entry.info.kind == pcLinkToDir or
-         entry.info.kind == pcLinkToFile:
-        clrBlue
-    elif fpOthersExec in entry.info.permissions or
-         fpUserExec in entry.info.permissions or
-         fpGroupExec in entry.info.permissions:
-        clrGreen
-    else:
-        clrWhite
+proc lsColorToNimboxColor(style:style.Style): nimbox.Color =
+    if style.fg.isNone: return clrWhite
+
+    let c = style.fg.get
+    case c.kind
+    of ck8:
+      case c.ck8Val
+      of c8Black: return clrBlack
+      of c8Red: return clrRed
+      of c8Green: return clrGreen
+      of c8Yellow: return clrYellow
+      of c8Blue: return clrBlue
+      of c8Magenta: return clrMagenta
+      of c8Cyan: return clrCyan
+      of c8White: return clrWhite
+    else: return clrWhite
+
+proc getFgColor(entry:DirEntry): nimbox.Color =
+    let
+        lsc = parseLsColorsEnv()
+        sty = lsc.styleForPath(entry.path)
+    sty.lsColorToNimboxColor
 
 proc drawDirEntry(entry:DirEntry, y:int, highlight:bool, selected:bool, nb:var Nimbox) =
     const
