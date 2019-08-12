@@ -13,4 +13,4 @@ bin           = @["nimmm"]
 requires "nim >= 0.19.9"
 requires "noise >= 0.1.3"
 requires "nimbox >= 0.1.0"
-requires "https://github.com/joachimschmidt557/nim-lscolors#master"
+requires "lscolors >= 0.2.2"
