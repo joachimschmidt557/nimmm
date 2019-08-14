@@ -84,6 +84,15 @@ proc lsColorToNimboxColor(style:style.Style): nimbox.Color =
         of c8White: return clrWhite
     else: return clrWhite
 
+proc lsColorToNimboxColors256(style:style.Style): Option[nimbox.Colors256] =
+    if style.fg.isNone: return none nimbox.Colors256
+
+    let c = style.fg.get
+    case c.kind
+    of ckFixed:
+        return some nimbox.Colors256(c.ckFixedVal)
+    else: return none nimbox.Colors256
+
 proc getFgColor(entry:DirEntry, lsc:LsColors): nimbox.Color =
     let
         sty = lsc.styleForPath(entry.path)
