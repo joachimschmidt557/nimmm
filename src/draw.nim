@@ -67,10 +67,7 @@ proc formatPath(path: string, length: int): string =
     result = path
     result.setLen(length)
 
-proc lsColorToNimboxColor(style: style.Style): nimbox.Color =
-  if style.fg.isNone: return clrWhite
-
-  let c = style.fg.get
+proc lsColorToNimboxColor(c: style.Color): nimbox.Color =
   case c.kind
   of ck8:
     case c.ck8Val
@@ -84,10 +81,7 @@ proc lsColorToNimboxColor(style: style.Style): nimbox.Color =
     of c8White: return clrWhite
   else: return clrWhite
 
-proc lsColorToNimboxColors256(style: style.Style): Option[nimbox.Colors256] =
-  if style.fg.isNone: return none nimbox.Colors256
-
-  let c = style.fg.get
+proc lsColorToNimboxColors256(c: style.Color): Option[nimbox.Colors256] =
   case c.kind
   of ckFixed:
     return some nimbox.Colors256(c.ckFixedVal)
@@ -96,15 +90,25 @@ proc lsColorToNimboxColors256(style: style.Style): Option[nimbox.Colors256] =
 proc getFgColor(entry: DirEntry, lsc: LsColors): nimbox.Color =
   let
     sty = lsc.styleForPath(entry.path)
-  sty.lsColorToNimboxColor()
+  if sty.fg.isSome:
+    sty.fg.get.lsColorToNimboxColor()
+  else:
+    clrWhite
+
+proc getFgColors256(entry: DirEntry, lsc: LsColors): Option[nimbox.Colors256] =
+  let
+    sty = lsc.styleForPath(entry.path)
+  if sty.fg.isSome:
+    sty.fg.get.lsColorToNimboxColors256()
+  else:
+    none nimbox.Colors256
 
 proc lsColorToNimboxStyle(sty: style.Style): nimbox.Style =
   let font = sty.font
 
-  if font.bold: return styBold
-  if font.underline: return styUnderline
-
-  return styNone
+  if font.bold: styBold
+  elif font.underline: styUnderline
+  else: styNone
 
 proc getStyle(entry: DirEntry, lsc: LsColors): nimbox.Style =
   let
@@ -119,18 +123,23 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
     isDir = entry.info.kind == pcDir or
             entry.info.kind == pcLinkToDir
     pathWidth = nb.width() - paddingLeft
-  nb.print(0, y,
-      (if highlight: " -> " else: "    ") &
+    line = (if highlight: " -> " else: "    ") &
       (if selected: "+ " else: "  ") &
       (entry.info.lastWriteTime.format("yyyy-MM-dd HH:mm")) &
       " " &
-      (if isDir:
-    "       /" else: sizeToString(entry.info.size)) &
-    " " &
-    entry.relative.formatPath(pathWidth),
-    (if highlight: clrBlack else: getFgColor(entry, lsc)),
-    (if highlight: clrWhite else: clrBlack),
-    (if highlight: styBold else: getStyle(entry, lsc)))
+      (if isDir: "       /" else: sizeToString(entry.info.size)) &
+      " " &
+      entry.relative.formatPath(pathWidth)
+  if getFgColors256(entry, lsc).isSome:
+    nb.print(0, y, line,
+      (if highlight: 0 else: getFgColors256(entry, lsc).get),
+      (if highlight: 15 else: 0),
+      (if highlight: styBold else: getStyle(entry, lsc)))
+  else:
+    nb.print(0, y, line,
+      (if highlight: clrBlack else: getFgColor(entry, lsc)),
+      (if highlight: clrWhite else: clrBlack),
+      (if highlight: styBold else: getStyle(entry, lsc)))
 
 proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
   let
