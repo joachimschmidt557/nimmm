@@ -97,6 +97,7 @@ proc mainLoop(nb: var Nimbox) =
   refresh()
 
   while true:
+    nb.inputMode = inpEsc and inpMouse
     redraw(s, err, nb)
 
     let event = nb.pollEvent()
