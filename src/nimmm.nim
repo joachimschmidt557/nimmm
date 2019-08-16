@@ -1,6 +1,6 @@
 import os, osproc, sequtils, strutils, re, sets, nimbox, options
 
-import core, scan, draw, fsoperations, interactions
+import core, scan, draw, fsoperations, interactions, nimboxext
 
 proc spawnShell(nb: var Nimbox) =
   const
@@ -20,7 +20,7 @@ proc spawnShell(nb: var Nimbox) =
     process.close()
   except:
     discard
-  nb = newNimbox()
+  nb = newNb()
 
 proc startSearch(nb: var Nimbox, showHidden: bool): tuple[entries: seq[
     DirEntry], error: bool] =
@@ -28,7 +28,7 @@ proc startSearch(nb: var Nimbox, showHidden: bool): tuple[entries: seq[
   let
     pattern = askString(" /", nb)
   result = search(pattern, showHidden)
-  nb = newNimbox()
+  nb = newNb()
 
 proc safeSetCurDir(s: var State, path: string) =
   var safeDir = path
@@ -235,6 +235,6 @@ proc mainLoop(nb: var Nimbox) =
         discard
 
 when isMainModule:
-  var nb = newNimbox()
+  var nb = newNb()
   addQuitProc(proc () {.noconv.} = nb.shutdown())
   mainLoop(nb)

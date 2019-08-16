@@ -3,7 +3,7 @@ import times, sets, os, strformat, nimbox, strutils, sequtils, algorithm, option
 import lscolors
 import lscolors/style
 
-import core
+import core, nimboxext
 
 proc sizeToString(size: BiggestInt): string =
   let siz = size.int
@@ -84,7 +84,7 @@ proc lsColorToNimboxColor(c: style.Color): nimbox.Color =
 proc lsColorToNimboxColors256(c: style.Color): Option[nimbox.Colors256] =
   case c.kind
   of ckFixed:
-    return some nimbox.Colors256(c.ckFixedVal)
+    return some nimbox.Colors256(int(c.ckFixedVal))
   else: return none nimbox.Colors256
 
 proc getFgColor(entry: DirEntry, lsc: LsColors): nimbox.Color =
@@ -131,30 +131,28 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
       " " &
       entry.relative.formatPath(pathWidth)
   if getFgColors256(entry, lsc).isSome:
-    nb.outputMode = out256
-    nb.print(0, y, line,
-      (if highlight: clrBlack.int else: getFgColors256(entry, lsc).get),
-      (if highlight: clrWhite.int else: clrBlack.int),
-      styNone)
-      #(if highlight: styBold else: getStyle(entry, lsc)))
-    nb.outputMode = outNormal
+    let
+      fg = if highlight: fgBlack() else: getFgColors256(entry, lsc).get
+      bg = if highlight: c8(clrWhite) else: c8(clrBlack)
+      style = if highlight: styBold else: getStyle(entry, lsc)
+    nb.print(0, y, line, fg, bg, style)
   else:
     nb.print(0, y, line,
-      (if highlight: clrBlack else: getFgColor(entry, lsc)),
-      (if highlight: clrWhite else: clrBlack),
+      (if highlight: fgBlack() else: c8(getFgColor(entry, lsc))),
+      (if highlight: c8(clrWhite) else: c8(clrBlack)),
       (if highlight: styBold else: getStyle(entry, lsc)))
 
 proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
   let
     offsetCd = 6 + (if numTabs > 1: 2*numTabs else: 0)
-  nb.print(0, 0, "nimmm ", clrYellow, clrDefault, styNone)
+  nb.print(0, 0, "nimmm ", c8(clrYellow), c8(clrBlack), styNone)
   if numTabs > 1:
     for i in 1 .. numTabs:
       if i == currentTab+1:
-        nb.print(6+2*(i-1), 0, $(i) & " ", clrYellow, clrDefault, styBold)
+        nb.print(6+2*(i-1), 0, $(i) & " ", c8(clrYellow), c8(clrBlack), styBold)
       else:
         nb.print(6+2*(i-1), 0, $(i) & " ")
-  nb.print(offsetCd, 0, getCurrentDir(), clrYellow, clrDefault, styBold)
+  nb.print(offsetCd, 0, getCurrentDir(), c8(clrYellow), c8(clrBlack), styBold)
 
 proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
     errMsg: string, nb: var Nimbox) =
@@ -166,13 +164,13 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
     offsetSelected = offsetH + (if hidden: 2 else: 0)
     offsetErrMsg = offsetSelected + (if lenSelected >
         0: selectedStr.len else: 0)
-  nb.print(0, y, entriesStr, clrYellow)
+  nb.print(0, y, entriesStr, c8(clrYellow), c8(clrBlack))
   if hidden:
-    nb.print(offsetH, y, " H", clrYellow, clrDefault, styBold)
+    nb.print(offsetH, y, " H", c8(clrYellow), c8(clrBlack), styBold)
   if lenSelected > 0:
     nb.print(offsetSelected, y, selectedStr)
   if errMsg.len > 0:
-    nb.print(offsetErrMsg, y, " " & errMsg, clrRed)
+    nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), c8(clrBlack))
 
 proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
   nb.clear()
@@ -191,7 +189,7 @@ proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
     drawHeader(tabs.len, currentTab, nb)
 
   if entries.len < 1:
-    nb.print(0, 2, "Empty directory", clrYellow)
+    nb.print(0, 2, "Empty directory", c8(clrYellow), c8(clrBlack))
   for i in topIndex .. bottomIndex:
     let entry = entries[i]
     drawDirEntry(entry,

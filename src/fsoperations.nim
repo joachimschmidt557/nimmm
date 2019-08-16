@@ -1,6 +1,6 @@
 import os, osproc, nimbox, sets, sequtils
 
-import interactions
+import interactions, nimboxext
 
 proc editFile*(file: string, nb: var Nimbox) =
   const
@@ -13,7 +13,7 @@ proc editFile*(file: string, nb: var Nimbox) =
       options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
 proc viewFile*(file: string, nb: var Nimbox) =
   const
@@ -26,7 +26,7 @@ proc viewFile*(file: string, nb: var Nimbox) =
       options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
 proc openFile*(file: string) =
   const
@@ -51,7 +51,7 @@ proc copyEntries*(entries: HashSet[string], nb: var Nimbox) =
       options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
 proc moveEntries*(entries: HashSet[string], nb: var Nimbox) =
   const
@@ -67,7 +67,7 @@ proc moveEntries*(entries: HashSet[string], nb: var Nimbox) =
       options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
 proc deleteEntries*(entries: HashSet[string], nb: var Nimbox) =
   const
@@ -83,7 +83,7 @@ proc deleteEntries*(entries: HashSet[string], nb: var Nimbox) =
     options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
 proc newFile*(nb: var Nimbox) =
   const
@@ -96,7 +96,7 @@ proc newFile*(nb: var Nimbox) =
       options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
 proc newDir*(nb: var Nimbox) =
   const
@@ -109,7 +109,7 @@ proc newDir*(nb: var Nimbox) =
       options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
 proc rename*(path: string, nb: var Nimbox) =
   const
@@ -123,5 +123,5 @@ proc rename*(path: string, nb: var Nimbox) =
       options = {poUsePath, poParentStreams, poInteractive})
   let exitCode = process.waitForExit()
   process.close()
-  nb = newNimbox()
+  nb = newNb()
 
