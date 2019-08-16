@@ -131,10 +131,13 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
       " " &
       entry.relative.formatPath(pathWidth)
   if getFgColors256(entry, lsc).isSome:
+    nb.outputMode = out256
     nb.print(0, y, line,
-      (if highlight: 0 else: getFgColors256(entry, lsc).get),
-      (if highlight: 15 else: 0),
-      (if highlight: styBold else: getStyle(entry, lsc)))
+      (if highlight: clrBlack.int else: getFgColors256(entry, lsc).get),
+      (if highlight: clrWhite.int else: clrBlack.int),
+      styNone)
+      #(if highlight: styBold else: getStyle(entry, lsc)))
+    nb.outputMode = outNormal
   else:
     nb.print(0, y, line,
       (if highlight: clrBlack else: getFgColor(entry, lsc)),
