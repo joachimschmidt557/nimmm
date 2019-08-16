@@ -27,3 +27,10 @@ template c8*(color:Color): int =
   ## Convert this color enum into an int
   ## with regards to the current color mode
   c8(ord(color))
+
+template fgBlack*(): int =
+  ## Provides a viable foreground-black color
+  if colors256Mode():
+    8
+  else:
+    ord(clrBlack)
