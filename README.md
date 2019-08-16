@@ -29,6 +29,7 @@ with environment variables just like `nnn` does.
 | `EDITOR` | file editor |
 | `PAGER` | file viewer |
 | `NIMMM_OPEN` | file opener |
+| `NIMMM_256` | enable 256 color mode |
 
 ### Basic commands
 
