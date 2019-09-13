@@ -1,4 +1,4 @@
-import os, osproc, sequtils, strutils, re, sets, nimbox, options
+import os, osproc, sequtils, strutils, re, sets, nimbox, options, parseopt
 
 import core, scan, draw, fsoperations, interactions, nimboxext
 
@@ -235,6 +235,15 @@ proc mainLoop(nb: var Nimbox) =
         discard
 
 when isMainModule:
+  var p = initOptParser()
+  while true:
+    p.next()
+    case p.kind
+      of cmdEnd: break
+      of cmdArgument:
+        setCurrentDir(p.key)
+      else: continue
+
   var nb = newNb()
   addQuitProc(proc () {.noconv.} = nb.shutdown())
   mainLoop(nb)
