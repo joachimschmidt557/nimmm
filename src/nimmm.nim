@@ -1,5 +1,7 @@
 import os, osproc, sequtils, strutils, re, sets, nimbox, options, parseopt
 
+import lscolors
+
 import core, scan, draw, fsoperations, interactions, nimboxext
 
 proc spawnShell(nb: var Nimbox) =
@@ -40,6 +42,7 @@ proc safeSetCurDir(s: var State, path: string) =
 proc mainLoop(nb: var Nimbox) =
   var
     s = initState()
+    lsc = parseLsColorsEnv()
     err = ""
 
   proc refresh() =
@@ -98,7 +101,7 @@ proc mainLoop(nb: var Nimbox) =
 
   while true:
     nb.inputMode = inpEsc and inpMouse
-    redraw(s, err, nb)
+    redraw(s, err, nb, lsc)
 
     let event = nb.pollEvent()
     case event.kind:

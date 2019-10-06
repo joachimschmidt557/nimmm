@@ -172,7 +172,7 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
   if errMsg.len > 0:
     nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), c8(clrBlack))
 
-proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
+proc redraw*(s: State, errMsg: string, nb: var Nimbox, lsc: LsColors) =
   nb.clear()
   let
     entries = s.entries
@@ -181,7 +181,6 @@ proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
     tabs = s.tabs
     currentTab = s.currentTab
     hidden = s.showHidden
-    lsc = parseLsColorsEnv()
     topIndex = getTopIndex(entries.len, index, nb)
     bottomIndex = getBottomIndex(entries.len, topIndex, nb)
 
