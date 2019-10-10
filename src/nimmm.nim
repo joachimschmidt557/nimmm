@@ -2,7 +2,7 @@ import os, osproc, sequtils, strutils, re, sets, nimbox, options, parseopt
 
 import lscolors
 
-import core, scan, draw, fsoperations, interactions, nimboxext
+import core, scan, draw, fsoperations, interactions, nimboxext, keymap
 
 proc spawnShell(nb: var Nimbox) =
   const
@@ -44,6 +44,7 @@ proc mainLoop(nb: var Nimbox) =
     s = initState()
     lsc = parseLsColorsEnv()
     err = ""
+    keymap = keyMapFromEnv()
 
   proc refresh() =
     var scanResult = scan(s.showHidden)
@@ -103,139 +104,112 @@ proc mainLoop(nb: var Nimbox) =
     nb.inputMode = inpEsc and inpMouse
     redraw(s, err, nb, lsc)
 
-    let event = nb.pollEvent()
-    case event.kind:
-    of EventType.Key:
-      case event.ch:
-      of 'q':
-        break
-      of '!':
-        spawnShell(nb)
-        refresh()
-      of '.':
-        s.showHidden = not s.showHidden
-        refresh()
-      of 'a':
-        for entry in s.entries:
-          s.selected.incl(entry.path)
-      of 's':
-        s.selected.clear()
-      of 'g':
-        s.currentIndex = 0
-      of 'G':
-        s.currentIndex = s.entries.high
-      of 'j':
-        down()
-      of 'k':
-        up()
-      of 'h':
-        left()
-      of 'l':
-        right()
-      of '~':
-        safeSetCurDir(s, getHomeDir())
-        refresh()
-        s.currentIndex = 0
-      of 't':
-        s.tabs.add(Tab(cd: getCurrentDir(), index: s.currentIndex))
-        switchTab(s.tabs.high)
-      of 'w':
-        if s.tabs.len > 1:
-          s.tabs.del(s.currentTab)
-        switchTab(max(0, s.currentTab - 1))
-      of '1':
-        switchTab(0)
-      of '2':
-        switchTab(1)
-      of '3':
-        switchTab(2)
-      of '4':
-        switchTab(3)
-      of '5':
-        switchTab(4)
-      of '6':
-        switchTab(5)
-      of '7':
-        switchTab(6)
-      of '8':
-        switchTab(7)
-      of '9':
-        switchTab(8)
-      of '0':
-        switchTab(9)
-      of 'e':
-        if not s.empty:
-          if s.currentEntry.info.kind == pcFile:
-            editFile(s.currentEntry.path, nb)
-            refresh()
-      of 'p':
-        if not s.empty:
-          if s.currentEntry.info.kind == pcFile:
-            viewFile(s.currentEntry.path, nb)
-      of 'f':
-        newFile(nb)
-        refresh()
-      of 'd':
-        newDir(nb)
-        refresh()
-      of 'r':
-        rename(s.currentEntry.relative, nb)
-        refresh()
-      of 'P':
-        copyEntries(s.selected, nb)
-        s.selected.clear()
-        refresh()
-      of 'V':
-        moveEntries(s.selected, nb)
-        s.selected.clear()
-        refresh()
-      of 'X':
-        deleteEntries(s.selected, nb)
-        s.selected.clear()
-        refresh()
-      of '/':
-        let result = startSearch(nb, s.showHidden)
-        s.entries = result.entries
-        if result.error:
-          err = "Some entries could not be displayed."
-        s.currentIndex = 0
-      else:
-        discard
-      case event.sym:
-      of Enter:
-        right()
-      of Backspace:
-        left()
-      of Space:
-        if not s.empty:
-          if not s.selected.contains(s.currentEntry.path):
-            s.selected.incl(s.currentEntry.path)
-          else:
-            s.selected.excl(s.currentEntry.path)
-      of Up:
-        up()
-      of Down:
-        down()
-      of Symbol.Left:
-        left()
-      of Symbol.Right:
-        right()
-      of Escape:
-        refresh()
-      else:
-        discard
-    of EventType.None:
-      discard
-    of EventType.Resize:
-      discard
-    of EventType.Mouse:
-      case event.action:
-      of WheelUp:
-        up()
-      of WheelDown:
-        down()
-      else:
-        discard
+    let
+      event = nb.pollEvent()
+      action = nimboxEventToAction(event, keymap)
+
+    if action.isNone:
+      continue
+
+    case action.get:
+    of AcQuit:
+      break
+    of AcShell:
+      spawnShell(nb)
+      refresh()
+    of AcToggleHidden:
+      s.showHidden = not s.showHidden
+      refresh()
+    of AcSelect:
+      if not s.empty:
+        if not s.selected.contains(s.currentEntry.path):
+          s.selected.incl(s.currentEntry.path)
+        else:
+          s.selected.excl(s.currentEntry.path)
+    of AcSelectAll:
+      for entry in s.entries:
+        s.selected.incl(entry.path)
+    of AcClearSelection:
+      s.selected.clear()
+    of AcFirst:
+      s.currentIndex = 0
+    of AcLast:
+      s.currentIndex = s.entries.high
+    of AcDown:
+      down()
+    of AcUp:
+      up()
+    of AcLeft:
+      left()
+    of AcRight:
+      right()
+    of AcHomeDir:
+      safeSetCurDir(s, getHomeDir())
+      refresh()
+      s.currentIndex = 0
+    of AcNewTab:
+      s.tabs.add(Tab(cd: getCurrentDir(), index: s.currentIndex))
+      switchTab(s.tabs.high)
+    of AcCloseTab:
+      if s.tabs.len > 1:
+        s.tabs.del(s.currentTab)
+      switchTab(max(0, s.currentTab - 1))
+    of AcTab1:
+      switchTab(0)
+    of AcTab2:
+      switchTab(1)
+    of AcTab3:
+      switchTab(2)
+    of AcTab4:
+      switchTab(3)
+    of AcTab5:
+      switchTab(4)
+    of AcTab6:
+      switchTab(5)
+    of AcTab7:
+      switchTab(6)
+    of AcTab8:
+      switchTab(7)
+    of AcTab9:
+      switchTab(8)
+    of AcTab10:
+      switchTab(9)
+    of AcEdit:
+      if not s.empty:
+        if s.currentEntry.info.kind == pcFile:
+          editFile(s.currentEntry.path, nb)
+          refresh()
+    of AcPager:
+      if not s.empty:
+        if s.currentEntry.info.kind == pcFile:
+          viewFile(s.currentEntry.path, nb)
+    of AcNewFile:
+      newFile(nb)
+      refresh()
+    of AcNewDir:
+      newDir(nb)
+      refresh()
+    of AcRename:
+      rename(s.currentEntry.relative, nb)
+      refresh()
+    of AcCopySelected:
+      copyEntries(s.selected, nb)
+      s.selected.clear()
+      refresh()
+    of AcMoveSelected:
+      moveEntries(s.selected, nb)
+      s.selected.clear()
+      refresh()
+    of AcDeleteSelected:
+      deleteEntries(s.selected, nb)
+      s.selected.clear()
+      refresh()
+    of AcSearch:
+      let result = startSearch(nb, s.showHidden)
+      s.entries = result.entries
+      if result.error:
+        err = "Some entries could not be displayed."
+      s.currentIndex = 0
 
 when isMainModule:
   var p = initOptParser()
