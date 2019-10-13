@@ -48,7 +48,7 @@ let
   defaultChars = {'q':AcQuit, '!':AcShell, '.':AcToggleHidden,
                  'a':AcSelectAll, 's':AcClearSelection,
                  'g':AcFirst, 'G':AcLast, 'j':AcDown,
-                 'k':AcUp, 'h':AcLeft, 'l':AcLeft,
+                 'k':AcUp, 'h':AcLeft, 'l':AcRight,
                  '~':AcHomeDir, 't':AcHomeDir, 'w':AcCloseTab,
                  '1':AcTab1, '2':AcTab2, '3':AcTab3,
                  '4':AcTab4, '5':AcTab5, '6':AcTab6,
