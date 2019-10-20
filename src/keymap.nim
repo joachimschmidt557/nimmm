@@ -49,7 +49,7 @@ let
                  'a':AcSelectAll, 's':AcClearSelection,
                  'g':AcFirst, 'G':AcLast, 'j':AcDown,
                  'k':AcUp, 'h':AcLeft, 'l':AcRight,
-                 '~':AcHomeDir, 't':AcHomeDir, 'w':AcCloseTab,
+                 '~':AcHomeDir, 't':AcNewTab, 'w':AcCloseTab,
                  '1':AcTab1, '2':AcTab2, '3':AcTab3,
                  '4':AcTab4, '5':AcTab5, '6':AcTab6,
                  '7':AcTab7, '8':AcTab8, '9':AcTab9,
