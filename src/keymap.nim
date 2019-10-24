@@ -53,7 +53,7 @@ let
                  '1':AcTab1, '2':AcTab2, '3':AcTab3,
                  '4':AcTab4, '5':AcTab5, '6':AcTab6,
                  '7':AcTab7, '8':AcTab8, '9':AcTab9,
-                 '0':AcTab10, 'e':AcEdit, 'p':AcPager,
+                 '0':AcTab10, 'e':AcEdit, 'p':AcPager, 'r':AcRename,
                  'f':AcNewFile, 'd':AcNewDir, 'P':AcCopySelected,
                  'V':AcMoveSelected, 'X':AcDeleteSelected,
                  '/':AcSearch,
