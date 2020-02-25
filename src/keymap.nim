@@ -1,9 +1,10 @@
-import tables, options
+import tables, options, strutils, os
 
 import nimbox
 
 type
   Action* = enum
+    AcNone,
     AcQuit,
     AcShell,
     AcToggleHidden,
@@ -56,7 +57,7 @@ let
                   "tab-10":AcTab10, "edit":AcEdit, "pager":AcPager, "rename":AcRename,
                   "new-file":AcNewFile, "new-dir":AcNewDir, "copy":AcCopySelected,
                   "move":AcMoveSelected, "delete":AcDeleteSelected,
-                  "search":AcSearch,
+                  "search":AcSearch, "none":AcNone,
                 }.newTable
   defaultChars = {'q':AcQuit, '!':AcShell, '.':AcToggleHidden,
                    'a':AcSelectAll, 's':AcClearSelection,
@@ -80,7 +81,18 @@ let
 
 proc keymapFromEnv*(): Keymap =
   ## Loads the keymap from environment variables
-  defaultKeymap
+  result = defaultKeymap
+  for key, value in envPairs():
+    if key.startsWith("NIMMM_KEY_"):
+      var char = key
+      char.removePrefix("NIMMM_KEY_")
+      if char.len == 1:
+        let action = actionNames.getOrDefault(value, AcNone)
+        result.chars[char[0]] = action
+    elif key.startsWith("NIMMM_SPECIAL_"):
+      discard
+    elif key.startsWith("NIMMM_MOUSE_"):
+      discard
 
 proc nimboxEventToAction*(event:nimbox.Event, keymap:Keymap): Option[Action] =
   ## Decides whether an action is associated with this

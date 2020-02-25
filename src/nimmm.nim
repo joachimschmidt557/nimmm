@@ -112,6 +112,7 @@ proc mainLoop(nb: var Nimbox) =
       continue
 
     case action.get:
+    of AcNone: discard
     of AcQuit:
       break
     of AcShell:

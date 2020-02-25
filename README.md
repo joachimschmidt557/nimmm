@@ -8,19 +8,17 @@ inspired by the awesome [nnn](https://github.com/jarun/nnn).
 
 ![screenshot of nimmm](screenshot.png "nimmm in action")
 
-The goal of `nimmm` is not to replace `nnn`; I just
-wanted to code my own version of `nnn` to my liking.
-`nimmm` does not nearly have the same amount of features
-and power than `nnn` but it has enough features to be
-usable as a daily driver for me.
+The goal of `nimmm` is not to replace `nnn`; I just wanted to code my own
+version of `nnn` to my liking. `nimmm` does not nearly have the same amount of
+features and power than `nnn` but it has enough features to be usable as a daily
+driver for me.
 
 ## Usage
 
 ### Command-line options
 
-There are no command line options! I designed `nimmm`
-to be purely interactive and handle the configuration
-with environment variables just like `nnn` does.
+There are no command line options! I designed `nimmm` to be purely interactive
+and handle the configuration with environment variables just like `nnn` does.
 
 ### Configuration
 
@@ -30,15 +28,18 @@ with environment variables just like `nnn` does.
 | `PAGER` | file viewer |
 | `NIMMM_OPEN` | file opener |
 | `NIMMM_256` | enable 256 color mode |
+| `NIMM_KEY_x` | customize keymap for key `x` |
 
-### Basic commands
+### Default keymap
+
+#### Basic commands
 
 | Key | Function |
 | --- | --- |
 | <kbd>q</kbd> | quit |
 | <kbd>!</kbd> | spawn shell in current directory |
 
-### Navigation
+#### Navigation
 
 | Key | Function |
 | --- | --- |
@@ -52,7 +53,7 @@ with environment variables just like `nnn` does.
 | <kbd>/</kbd> | start searching |
 | <kbd>Esc</kbd> | stop searching |
 
-### File operations
+#### File operations
 
 | Key | Function |
 | --- | --- |
@@ -60,7 +61,7 @@ with environment variables just like `nnn` does.
 | <kbd>p</kbd> | view file in `$PAGER` |
 | <kbd>r</kbd> | rename file/directory |
 
-### Selections
+#### Selections
 
 | Key | Function |
 | --- | --- |
@@ -71,7 +72,7 @@ with environment variables just like `nnn` does.
 | <kbd>P</kbd> | copy selected entries |
 | <kbd>V</kbd> | move selected entries |
 
-### Tabs
+#### Tabs
 
 | Key | Function |
 | --- | --- |
@@ -87,11 +88,10 @@ with environment variables just like `nnn` does.
 
 ### Compile-time
 
-The main dependency nimmm needs is the `nim` development
-toolchain, i.e. the `nim` compiler and the `nimble`
-package manager. A C compiler (gcc, clang, etc.) or
-a C++ compiler is necessary for compiling the generated
-C/C++ code to binaries.
+The main dependency nimmm needs is the `nim` development toolchain, i.e. the
+`nim` compiler and the `nimble` package manager. A C compiler (gcc, clang, etc.)
+or a C++ compiler is necessary for compiling the generated C/C++ code to
+binaries.
 
 Apart from that, these libraries are required:
 
