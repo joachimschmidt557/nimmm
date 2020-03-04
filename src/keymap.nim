@@ -59,6 +59,19 @@ let
                   "move":AcMoveSelected, "delete":AcDeleteSelected,
                   "search":AcSearch, "none":AcNone,
                 }.newTable
+
+  symbolNames = {"insert":Symbol.Insert, "delete":Symbol.Delete,
+                  "home":Symbol.Home, "end":Symbol.End,
+                  "pgup":Symbol.PgUp, "pgdn":Symbol.PgDn,
+                  "up":Symbol.Up, "down":Symbol.Down,
+                  "left":Symbol.Left, "right":Symbol.Right,
+                  "ESC":Symbol.Escape, "SPC":Symbol.Space,
+                  "TAB":Symbol.Tab, "RET":Symbol.Enter,
+                  "DEL":Symbol.Backspace}.newTable
+  mouseNames = {"left":Mouse.Left, "right":Mouse.Right,
+                 "middle":Mouse.Middle, "wheel-up":Mouse.WheelUp,
+                 "wheel-down":Mouse.WheelDown}.newTable
+
   defaultChars = {'q':AcQuit, '!':AcShell, '.':AcToggleHidden,
                    'a':AcSelectAll, 's':AcClearSelection,
                    'g':AcFirst, 'G':AcLast, 'j':AcDown,
@@ -83,16 +96,22 @@ proc keymapFromEnv*(): Keymap =
   ## Loads the keymap from environment variables
   result = defaultKeymap
   for key, value in envPairs():
+    let action = actionNames.getOrDefault(value, AcNone)
     if key.startsWith("NIMMM_KEY_"):
       var char = key
       char.removePrefix("NIMMM_KEY_")
       if char.len == 1:
-        let action = actionNames.getOrDefault(value, AcNone)
         result.chars[char[0]] = action
-    elif key.startsWith("NIMMM_SPECIAL_"):
-      discard
+    elif key.startsWith("NIMMM_SYMBOL_"):
+      var name = key
+      name.removePrefix("NIMMM_SYMBOL_")
+      if name in symbolNames:
+        result.symbols[symbolNames[name]] = action
     elif key.startsWith("NIMMM_MOUSE_"):
-      discard
+      var name = key
+      name.removePrefix("NIMMM_MOUSE_")
+      if name in mouseNames:
+        result.mouse[mouseNames[name]] = action
 
 proc nimboxEventToAction*(event:nimbox.Event, keymap:Keymap): Option[Action] =
   ## Decides whether an action is associated with this
