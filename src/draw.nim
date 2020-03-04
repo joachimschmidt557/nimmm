@@ -173,34 +173,28 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
     nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), c8(clrBlack))
 
 proc redraw*(s: State, errMsg: string, nb: var Nimbox, lsc: LsColors) =
-  nb.clear()
   let
-    entries = s.entries
-    index = s.currentIndex
-    selectedEntries = s.selected
-    tabs = s.tabs
-    currentTab = s.currentTab
-    hidden = s.showHidden
-    topIndex = getTopIndex(entries.len, index, nb)
-    bottomIndex = getBottomIndex(entries.len, topIndex, nb)
+    topIndex = getTopIndex(s.entries.len, s.currentIndex, nb)
+    bottomIndex = getBottomIndex(s.entries.len, topIndex, nb)
 
+  nb.clear()
   if nb.height() > 4:
-    drawHeader(tabs.len, currentTab, nb)
+    drawHeader(s.tabs.len, s.currentTab, nb)
 
-  if entries.len < 1:
+  if s.entries.len < 1:
     nb.print(0, 2, "Empty directory", c8(clrYellow), c8(clrBlack))
   for i in topIndex .. bottomIndex:
-    let entry = entries[i]
+    let entry = s.entries[i]
     drawDirEntry(entry,
                 i-topIndex+2,
-                (i == index),
-                (selectedEntries.contains(entry.path)),
+                (i == s.currentIndex),
+                (s.selected.contains(entry.path)),
                 lsc,
                 nb)
 
   if nb.height() > 4:
-    drawFooter(index, entries.len, selectedEntries.len,
-               hidden, errMsg, nb)
+    drawFooter(s.currentIndex, s.entries.len, s.selected.len,
+               s.showHidden, errMsg, nb)
 
   nb.present()
 
