@@ -87,17 +87,17 @@ proc lsColorToNimboxColors256(c: style.Color): Option[nimbox.Colors256] =
     return some nimbox.Colors256(int(c.ckFixedVal))
   else: return none nimbox.Colors256
 
-proc getFgColor(entry: DirEntry, lsc: LsColors): nimbox.Color =
+proc getFgColor(entry: DirEntry): nimbox.Color =
   let
-    sty = lsc.styleForPath(entry.path)
+    sty = entry.style
   if sty.fg.isSome:
     sty.fg.get.lsColorToNimboxColor()
   else:
     clrWhite
 
-proc getFgColors256(entry: DirEntry, lsc: LsColors): Option[nimbox.Colors256] =
+proc getFgColors256(entry: DirEntry): Option[nimbox.Colors256] =
   let
-    sty = lsc.styleForPath(entry.path)
+    sty = entry.style
   if sty.fg.isSome:
     sty.fg.get.lsColorToNimboxColors256()
   else:
@@ -110,13 +110,11 @@ proc lsColorToNimboxStyle(sty: style.Style): nimbox.Style =
   elif font.underline: styUnderline
   else: styNone
 
-proc getStyle(entry: DirEntry, lsc: LsColors): nimbox.Style =
-  let
-    sty = lsc.styleForPath(entry.path)
-  sty.lsColorToNimboxStyle()
+proc getStyle(entry: DirEntry): nimbox.Style =
+  entry.style.lsColorToNimboxStyle()
 
 proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
-    lsc: LsColors, nb: var Nimbox) =
+                  nb: var Nimbox) =
   const
     paddingLeft = 32
   let
@@ -130,17 +128,17 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
       (if isDir: "       /" else: sizeToString(entry.info.size)) &
       " " &
       entry.relative.formatPath(pathWidth)
-  if getFgColors256(entry, lsc).isSome:
+  if getFgColors256(entry).isSome:
     let
-      fg = if highlight: fgBlack() else: getFgColors256(entry, lsc).get
+      fg = if highlight: fgBlack() else: getFgColors256(entry).get
       bg = if highlight: c8(clrWhite) else: c8(clrBlack)
-      style = if highlight: styBold else: getStyle(entry, lsc)
+      style = if highlight: styBold else: getStyle(entry)
     nb.print(0, y, line, fg, bg, style)
   else:
     nb.print(0, y, line,
-      (if highlight: fgBlack() else: c8(getFgColor(entry, lsc))),
+      (if highlight: fgBlack() else: c8(getFgColor(entry))),
       (if highlight: c8(clrWhite) else: c8(clrBlack)),
-      (if highlight: styBold else: getStyle(entry, lsc)))
+      (if highlight: styBold else: getStyle(entry)))
 
 proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
   let
@@ -172,7 +170,7 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
   if errMsg.len > 0:
     nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), c8(clrBlack))
 
-proc redraw*(s: State, errMsg: string, nb: var Nimbox, lsc: LsColors) =
+proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
   let
     topIndex = getTopIndex(s.entries.len, s.currentIndex, nb)
     bottomIndex = getBottomIndex(s.entries.len, topIndex, nb)
@@ -189,7 +187,6 @@ proc redraw*(s: State, errMsg: string, nb: var Nimbox, lsc: LsColors) =
                 i-topIndex+2,
                 (i == s.currentIndex),
                 (s.selected.contains(entry.path)),
-                lsc,
                 nb)
 
   if nb.height() > 4:

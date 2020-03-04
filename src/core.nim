@@ -1,5 +1,7 @@
 import os, sets
 
+import lscolors/style
+
 type
   Tab* = object
     ## Represents a tab
@@ -11,6 +13,7 @@ type
     path*: string
     relative*: string
     info*: FileInfo
+    style*: Style
 
   State* = object
     ## Represents a possible state of nimmm

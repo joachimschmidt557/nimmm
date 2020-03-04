@@ -1,8 +1,10 @@
 import os, re, algorithm, strutils
 
+import lscolors
+
 import core
 
-proc scan*(showHidden: bool): tuple[entries: seq[DirEntry], error: bool] =
+proc scan*(showHidden: bool, lsc: LsColors): tuple[entries: seq[DirEntry], error: bool] =
   var
     error = false
     entries: seq[DirEntry]
@@ -10,15 +12,17 @@ proc scan*(showHidden: bool): tuple[entries: seq[DirEntry], error: bool] =
     if showHidden or not isHidden(path):
       try:
         entries.add(DirEntry(path: path,
-            info: getFileInfo(path),
-            relative: extractFilename(path)))
+                             info: getFileInfo(path),
+                             relative: extractFilename(path),
+                             style: lsc.styleForPath(path)))
       except:
         error = true
   entries.sort do (x, y: DirEntry) -> int:
     cmpIgnoreCase(x.path, y.path)
   return (entries, error)
 
-proc search*(pattern: string, showHidden: bool): tuple[entries: seq[DirEntry], error: bool] =
+proc search*(pattern: string, showHidden: bool, lsc: LsColors): tuple[
+    entries: seq[DirEntry], error: bool] =
   let
     regex = re(pattern)
   var
@@ -31,8 +35,9 @@ proc search*(pattern: string, showHidden: bool): tuple[entries: seq[DirEntry], e
       if showHidden or not isHidden(path):
         try:
           entries.add(DirEntry(path: path,
-              info: getFileInfo(path),
-              relative: relative))
+                               info: getFileInfo(path),
+                               relative: relative,
+                               style: lsc.styleForPath(path)))
         except:
           error = true
   entries.sort do (x, y: DirEntry) -> int:

@@ -24,12 +24,12 @@ proc spawnShell(nb: var Nimbox) =
     discard
   nb = newNb()
 
-proc startSearch(nb: var Nimbox, showHidden: bool): tuple[entries: seq[
+proc startSearch(nb: var Nimbox, showHidden: bool, lsc: LsColors): tuple[entries: seq[
     DirEntry], error: bool] =
   nb.shutdown()
   let
     pattern = askString(" /", nb)
-  result = search(pattern, showHidden)
+  result = search(pattern, showHidden, lsc)
   nb = newNb()
 
 proc safeSetCurDir(s: var State, path: string) =
@@ -47,7 +47,7 @@ proc mainLoop(nb: var Nimbox) =
     keymap = keyMapFromEnv()
 
   proc refresh() =
-    var scanResult = scan(s.showHidden)
+    var scanResult = scan(s.showHidden, lsc)
     err = ""
     s.entries = scanResult.entries
     if scanResult.error:
@@ -102,7 +102,7 @@ proc mainLoop(nb: var Nimbox) =
 
   while true:
     nb.inputMode = inpEsc and inpMouse
-    redraw(s, err, nb, lsc)
+    redraw(s, err, nb)
 
     let
       event = nb.pollEvent()
@@ -206,7 +206,7 @@ proc mainLoop(nb: var Nimbox) =
       s.selected.clear()
       refresh()
     of AcSearch:
-      let result = startSearch(nb, s.showHidden)
+      let result = startSearch(nb, s.showHidden, lsc)
       s.entries = result.entries
       if result.error:
         err = "Some entries could not be displayed."
