@@ -61,6 +61,17 @@ and handle the configuration with environment variables just like `nnn` does.
 | <kbd>w</kbd> | `close-tab` | close tab |
 | <kbd>1</kbd>..<kbd>0</kbd> | `tab-x` | go to tab 1..10 |
 
+If you prefer more Emacs-oriented movement keybindings, you can do this for
+example:
+
+``` shell
+$ for x in h j k l; do export "NIMMM_KEY_$x"="none"; done
+$ export "NIMMM_KEY_n"="down"
+$ export "NIMMM_KEY_p"="up"
+$ export "NIMMM_KEY_f"="right"
+$ export "NIMMM_KEY_b"="left"
+```
+
 ## ToDo
 
 * Help page
