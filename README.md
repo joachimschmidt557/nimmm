@@ -29,56 +29,37 @@ and handle the configuration with environment variables just like `nnn` does.
 | `NIMMM_OPEN` | file opener |
 | `NIMMM_256` | enable 256 color mode |
 | `NIMM_KEY_x` | customize keymap for key `x` |
+| `NIMM_SYMBOL_x` | customize keymap for special symbol `x` |
+| `NIMM_MOUSE_x` | customize action for mouse event `x` |
 
 ### Default keymap
 
-#### Basic commands
-
-| Key | Function |
-| --- | --- |
-| <kbd>q</kbd> | quit |
-| <kbd>!</kbd> | spawn shell in current directory |
-
-#### Navigation
-
-| Key | Function |
-| --- | --- |
-| <kbd>j</kbd> | next entry |
-| <kbd>k</kbd> | previous entry |
-| <kbd>h</kbd> | go to the parent directory |
-| <kbd>l</kbd> | navigate to directory / open file |
-| <kbd>g</kbd> | first entry |
-| <kbd>G</kbd> | last entry |
-| <kbd>~</kbd> | go to home directory |
-| <kbd>/</kbd> | start searching |
-| <kbd>Esc</kbd> | stop searching |
-
-#### File operations
-
-| Key | Function |
-| --- | --- |
-| <kbd>e</kbd> | edit file in `$EDITOR` |
-| <kbd>p</kbd> | view file in `$PAGER` |
-| <kbd>r</kbd> | rename file/directory |
-
-#### Selections
-
-| Key | Function |
-| --- | --- |
-| <kbd>Space</kbd> | select / deselect current entry |
-| <kbd>a</kbd> | select all entries in current directory |
-| <kbd>s</kbd> | clear selection |
-| <kbd>X</kbd> | delete selected entries |
-| <kbd>P</kbd> | copy selected entries |
-| <kbd>V</kbd> | move selected entries |
-
-#### Tabs
-
-| Key | Function |
-| --- | --- |
-| <kbd>t</kbd> | new tab |
-| <kbd>w</kbd> | close tab |
-| <kbd>1</kbd>..<kbd>0</kbd> | go to tab 1..10 |
+| Key | Default binding | Description |
+| --- | --- | --- |
+| <kbd>q</kbd> | `quit` | quit |
+| <kbd>!</kbd> | `shell` | spawn shell in current directory |
+| <kbd>j</kbd> | `down` | next entry |
+| <kbd>k</kbd> | `up` | previous entry |
+| <kbd>h</kbd> | `left` | go to the parent directory |
+| <kbd>l</kbd> | `right` | navigate to directory / open file |
+| <kbd>g</kbd> | `first` | first entry |
+| <kbd>G</kbd> | `last` | last entry |
+| <kbd>~</kbd> | `home` | go to home directory |
+| <kbd>/</kbd> | `search` | start searching |
+| <kbd>e</kbd> | `edit` | edit file in `$EDITOR` |
+| <kbd>p</kbd> | `pager` | view file in `$PAGER` |
+| <kbd>r</kbd> | `rename` | rename file/directory |
+| <kbd>Space</kbd> | `select` | select / deselect current entry |
+| <kbd>a</kbd> | `select-all` | select all entries in current directory |
+| <kbd>s</kbd> | `select-none` | clear selection |
+| <kbd>X</kbd> | `delete` | delete selected entries |
+| <kbd>P</kbd> | `copy` | copy selected entries |
+| <kbd>V</kbd> | `move` | move selected entries |
+| <kbd>f</kbd> | `new-file` | create (touch) a new file |
+| <kbd>d</kbd> | `new-dir` | create a new directory |
+| <kbd>t</kbd> | `new-tab` | new tab |
+| <kbd>w</kbd> | `close-tab` | close tab |
+| <kbd>1</kbd>..<kbd>0</kbd> | `tab-x` | go to tab 1..10 |
 
 ## ToDo
 

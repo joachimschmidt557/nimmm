@@ -47,7 +47,7 @@ type
 
 let
   actionNames = {"quit":AcQuit, "shell":AcShell, "toggle-hidden":AcToggleHidden,
-                  "select-all":AcSelectAll, "clear-selection":AcClearSelection,
+                  "select-all":AcSelectAll, "select-none":AcClearSelection,
                   "first":AcFirst, "last":AcLast, "down":AcDown,
                   "up":AcUp, "left":AcLeft, "right":AcRight,
                   "home":AcHomeDir, "new-tab":AcNewTab, "close-tab":AcCloseTab,
@@ -57,7 +57,7 @@ let
                   "tab-10":AcTab10, "edit":AcEdit, "pager":AcPager, "rename":AcRename,
                   "new-file":AcNewFile, "new-dir":AcNewDir, "copy":AcCopySelected,
                   "move":AcMoveSelected, "delete":AcDeleteSelected,
-                  "search":AcSearch, "none":AcNone,
+                  "search":AcSearch, "none":AcNone, "select":AcSelect,
                 }.newTable
 
   symbolNames = {"insert":Symbol.Insert, "delete":Symbol.Delete,
