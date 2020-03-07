@@ -13,6 +13,14 @@ version of `nnn` to my liking. `nimmm` does not nearly have the same amount of
 features and power than `nnn` but it has enough features to be usable as a daily
 driver for me.
 
+## Features
+
+* Support for all plaforms where `nim` and `termbox` can be installed on
+* Colorizing with `LS_COLORS`
+* Custom keymaps (see below)
+* Simple selection mechanism
+* Incremental search
+
 ## Usage
 
 ### Command-line options
