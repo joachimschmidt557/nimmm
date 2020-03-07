@@ -153,22 +153,31 @@ proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
   nb.print(offsetCd, 0, getCurrentDir(), c8(clrYellow), c8(clrBlack), styBold)
 
 proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
-    errMsg: string, nb: var Nimbox) =
+                search: bool, errMsg: string, nb: var Nimbox) =
   let
     y = nb.height() - 1
     entriesStr = $(index + 1) & "/" & $lenEntries
     selectedStr = " " & $lenSelected & " selected"
     offsetH = entriesStr.len
-    offsetSelected = offsetH + (if hidden: 2 else: 0)
+    offsetS = offsetH + (if hidden: 2 else: 0)
+    offsetSelected = offsetS + (if hidden: 2 else: 0)
     offsetErrMsg = offsetSelected + (if lenSelected >
         0: selectedStr.len else: 0)
   nb.print(0, y, entriesStr, c8(clrYellow), c8(clrBlack))
   if hidden:
     nb.print(offsetH, y, " H", c8(clrYellow), c8(clrBlack), styBold)
+  if search:
+    nb.print(offsetS, y, " S", c8(clrYellow), c8(clrBlack), styBold)
   if lenSelected > 0:
     nb.print(offsetSelected, y, selectedStr)
   if errMsg.len > 0:
     nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), c8(clrBlack))
+
+proc drawSearchFooter(query: string, nb: var Nimbox) =
+  let
+    y = nb.height() - 1
+  nb.print(0, y, "search:", c8(clrYellow), c8(clrBlack))
+  nb.print(8, y, query, c8(clrYellow), c8(clrBlack))
 
 proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
   let
@@ -190,8 +199,13 @@ proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
                 nb)
 
   if nb.height() > 4:
-    drawFooter(s.currentIndex, s.entries.len, s.selected.len,
-               s.showHidden, errMsg, nb)
+    case s.tabStateInfo.state
+    of TsNormal, TsSearchResults:
+      drawFooter(s.currentIndex, s.entries.len, s.selected.len,
+                 s.showHidden, s.tabStateInfo.state == TsSearchResults,
+                 errMsg, nb)
+    of TsSearch:
+      drawSearchFooter(s.tabStateInfo.query, nb)
 
   nb.present()
 

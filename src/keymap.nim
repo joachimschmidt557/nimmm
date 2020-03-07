@@ -4,6 +4,7 @@ import nimbox
 
 type
   Action* = enum
+    ## An action nimmm can perform (in normal mode or search results mode)
     AcNone,
     AcQuit,
     AcShell,
@@ -39,8 +40,10 @@ type
     AcTab9,
     AcTab10,
     AcSearch,
+    AcEndSearch,
 
   Keymap* = object
+    ## Configurable keymap information is stored in objects of this type
     chars: TableRef[char, Action]
     symbols: TableRef[Symbol, Action]
     mouse: TableRef[Mouse, Action]
@@ -58,6 +61,7 @@ let
                   "new-file":AcNewFile, "new-dir":AcNewDir, "copy":AcCopySelected,
                   "move":AcMoveSelected, "delete":AcDeleteSelected,
                   "search":AcSearch, "none":AcNone, "select":AcSelect,
+                  "end-search":AcEndSearch
                 }.newTable
 
   symbolNames = {"insert":Symbol.Insert, "delete":Symbol.Delete,
@@ -88,7 +92,7 @@ let
   defaultSymbols = {Symbol.Enter:AcRight, Symbol.Backspace:AcLeft,
                      Symbol.Space:AcSelect, Symbol.Up:AcUp,
                      Symbol.Down:AcDown, Symbol.Left:AcLeft,
-                     Symbol.Right:AcRight}.newTable
+                     Symbol.Right:AcRight, Symbol.Escape:AcEndSearch}.newTable
   defaultMouse = {Mouse.WheelUp:AcUp, Mouse.WheelDown:AcDown}.newTable
   defaultKeymap* = Keymap(chars:defaultChars, symbols:defaultSymbols, mouse:defaultMouse)
 
@@ -113,21 +117,21 @@ proc keymapFromEnv*(): Keymap =
       if name in mouseNames:
         result.mouse[mouseNames[name]] = action
 
-proc nimboxEventToAction*(event:nimbox.Event, keymap:Keymap): Option[Action] =
-  ## Decides whether an action is associated with this
-  ## event and in that case, returns that action
+proc nimboxEventToAction*(event:nimbox.Event, keymap:Keymap): Action =
+  ## Decides whether an action is associated with this event and in that case,
+  ## returns that action
   case event.kind:
   of EventType.Key:
     if keymap.chars.contains(event.ch):
-      return some keymap.chars[event.ch]
+      return keymap.chars[event.ch]
     if keymap.symbols.contains(event.sym):
-      return some keymap.symbols[event.sym]
-    return none Action
+      return keymap.symbols[event.sym]
+    return AcNone
   of EventType.Mouse:
     if keymap.mouse.contains(event.action):
-      return some keymap.mouse[event.action]
-    return none Action
+      return keymap.mouse[event.action]
+    return AcNone
   of EventType.Resize:
-    return none Action
+    return AcNone
   of EventType.None:
-    return none Action
+    return AcNone

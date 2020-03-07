@@ -24,14 +24,6 @@ proc spawnShell(nb: var Nimbox) =
     discard
   nb = newNb()
 
-proc startSearch(nb: var Nimbox, showHidden: bool, lsc: LsColors): tuple[entries: seq[
-    DirEntry], error: bool] =
-  nb.shutdown()
-  let
-    pattern = askString(" /", nb)
-  result = search(pattern, showHidden, lsc)
-  nb = newNb()
-
 proc safeSetCurDir(s: var State, path: string) =
   var safeDir = path
   while not existsDir(safeDir):
@@ -47,11 +39,22 @@ proc mainLoop(nb: var Nimbox) =
     keymap = keyMapFromEnv()
 
   proc refresh() =
-    var scanResult = scan(s.showHidden, lsc)
-    err = ""
-    s.entries = scanResult.entries
-    if scanResult.error:
-      err = "Some entries couldn't be displayed"
+    case s.tabStateInfo.state
+    of TsNormal:
+      var scanResult = scan(s.showHidden, lsc)
+      s.entries = scanResult.entries
+      if scanResult.error:
+        err = "Some entries couldn't be displayed"
+      else:
+        err = ""
+    of TsSearch, TsSearchResults:
+      var scanResult = search(s.tabStateInfo.query, s.showHidden, lsc)
+      s.entries = scanResult.entries
+      if scanResult.error:
+        err = "Some entries couldn't be displayed"
+      else:
+        err = ""
+
     if s.entries.len > 0:
       if s.currentIndex < 0:
         s.currentIndex = 0
@@ -98,6 +101,10 @@ proc mainLoop(nb: var Nimbox) =
       elif s.currentEntry.info.kind == pcFile:
         openFile(s.currentEntry.path)
 
+  proc resetTab() =
+    s.tabStateInfo = TabStateInfo(state: TsNormal)
+    s.currentIndex = 0
+
   refresh()
 
   while true:
@@ -106,111 +113,136 @@ proc mainLoop(nb: var Nimbox) =
 
     let
       event = nb.pollEvent()
-      action = nimboxEventToAction(event, keymap)
 
-    if action.isNone:
-      continue
-
-    case action.get:
-    of AcNone: discard
-    of AcQuit:
-      break
-    of AcShell:
-      spawnShell(nb)
-      refresh()
-    of AcToggleHidden:
-      s.showHidden = not s.showHidden
-      refresh()
-    of AcSelect:
-      if not s.empty:
-        if not s.selected.contains(s.currentEntry.path):
-          s.selected.incl(s.currentEntry.path)
-        else:
-          s.selected.excl(s.currentEntry.path)
-    of AcSelectAll:
-      for entry in s.entries:
-        s.selected.incl(entry.path)
-    of AcClearSelection:
-      s.selected.clear()
-    of AcFirst:
-      s.currentIndex = 0
-    of AcLast:
-      s.currentIndex = s.entries.high
-    of AcDown:
-      down()
-    of AcUp:
-      up()
-    of AcLeft:
-      left()
-    of AcRight:
-      right()
-    of AcHomeDir:
-      safeSetCurDir(s, getHomeDir())
-      refresh()
-      s.currentIndex = 0
-    of AcNewTab:
-      s.tabs.add(Tab(cd: getCurrentDir(), index: s.currentIndex))
-      switchTab(s.tabs.high)
-    of AcCloseTab:
-      if s.tabs.len > 1:
-        s.tabs.del(s.currentTab)
-      switchTab(max(0, s.currentTab - 1))
-    of AcTab1:
-      switchTab(0)
-    of AcTab2:
-      switchTab(1)
-    of AcTab3:
-      switchTab(2)
-    of AcTab4:
-      switchTab(3)
-    of AcTab5:
-      switchTab(4)
-    of AcTab6:
-      switchTab(5)
-    of AcTab7:
-      switchTab(6)
-    of AcTab8:
-      switchTab(7)
-    of AcTab9:
-      switchTab(8)
-    of AcTab10:
-      switchTab(9)
-    of AcEdit:
-      if not s.empty:
-        if s.currentEntry.info.kind == pcFile:
-          editFile(s.currentEntry.path, nb)
+    case s.tabStateInfo.state
+    # Special keymap for incremental search (overrides custom keymaps)
+    of TsSearch:
+      case event.kind
+      of EventType.Key:
+        case event.sym
+        of Symbol.Escape:
+          resetTab()
           refresh()
-    of AcPager:
-      if not s.empty:
-        if s.currentEntry.info.kind == pcFile:
-          viewFile(s.currentEntry.path, nb)
-    of AcNewFile:
-      newFile(nb)
-      refresh()
-    of AcNewDir:
-      newDir(nb)
-      refresh()
-    of AcRename:
-      rename(s.currentEntry.relative, nb)
-      refresh()
-    of AcCopySelected:
-      copyEntries(s.selected, nb)
-      s.selected.clear()
-      refresh()
-    of AcMoveSelected:
-      moveEntries(s.selected, nb)
-      s.selected.clear()
-      refresh()
-    of AcDeleteSelected:
-      deleteEntries(s.selected, nb)
-      s.selected.clear()
-      refresh()
-    of AcSearch:
-      let result = startSearch(nb, s.showHidden, lsc)
-      s.entries = result.entries
-      if result.error:
-        err = "Some entries could not be displayed."
-      s.currentIndex = 0
+        of Symbol.Backspace:
+          if s.tabStateInfo.query.len == 0:
+            resetTab()
+          else:
+            s.tabStateInfo.query.setLen(s.tabStateInfo.query.high)
+          refresh()
+        of Symbol.Enter:
+          s.tabStateInfo = TabStateInfo(state: TsSearchResults, query: s.tabStateInfo.query)
+          refresh()
+        else:
+          s.tabStateInfo.query.add(event.ch)
+          refresh()
+      of EventType.Mouse, EventType.Resize, EventType.None:
+        discard
+    # Normal keymap
+    of TsNormal, TsSearchResults:
+      case nimboxEventToAction(event, keymap):
+      of AcNone: discard
+      of AcQuit:
+        break
+      of AcShell:
+        spawnShell(nb)
+        refresh()
+      of AcToggleHidden:
+        s.showHidden = not s.showHidden
+        refresh()
+      of AcSelect:
+        if not s.empty:
+          if not s.selected.contains(s.currentEntry.path):
+            s.selected.incl(s.currentEntry.path)
+          else:
+            s.selected.excl(s.currentEntry.path)
+      of AcSelectAll:
+        for entry in s.entries:
+          s.selected.incl(entry.path)
+      of AcClearSelection:
+        s.selected.clear()
+      of AcFirst:
+        s.currentIndex = 0
+      of AcLast:
+        s.currentIndex = s.entries.high
+      of AcDown:
+        down()
+      of AcUp:
+        up()
+      of AcLeft:
+        resetTab()
+        left()
+      of AcRight:
+        resetTab()
+        right()
+      of AcHomeDir:
+        safeSetCurDir(s, getHomeDir())
+        resetTab()
+        refresh()
+      of AcNewTab:
+        s.tabs.add(Tab(cd: getCurrentDir(),
+                       index: s.currentIndex,
+                       stateInfo: TabStateInfo(state: TsNormal)))
+        switchTab(s.tabs.high)
+      of AcCloseTab:
+        if s.tabs.len > 1:
+          s.tabs.del(s.currentTab)
+        switchTab(max(0, s.currentTab - 1))
+      of AcTab1:
+        switchTab(0)
+      of AcTab2:
+        switchTab(1)
+      of AcTab3:
+        switchTab(2)
+      of AcTab4:
+        switchTab(3)
+      of AcTab5:
+        switchTab(4)
+      of AcTab6:
+        switchTab(5)
+      of AcTab7:
+        switchTab(6)
+      of AcTab8:
+        switchTab(7)
+      of AcTab9:
+        switchTab(8)
+      of AcTab10:
+        switchTab(9)
+      of AcEdit:
+        if not s.empty:
+          if s.currentEntry.info.kind == pcFile:
+            editFile(s.currentEntry.path, nb)
+            refresh()
+      of AcPager:
+        if not s.empty:
+          if s.currentEntry.info.kind == pcFile:
+            viewFile(s.currentEntry.path, nb)
+      of AcNewFile:
+        newFile(nb)
+        refresh()
+      of AcNewDir:
+        newDir(nb)
+        refresh()
+      of AcRename:
+        rename(s.currentEntry.relative, nb)
+        refresh()
+      of AcCopySelected:
+        copyEntries(s.selected, nb)
+        s.selected.clear()
+        refresh()
+      of AcMoveSelected:
+        moveEntries(s.selected, nb)
+        s.selected.clear()
+        refresh()
+      of AcDeleteSelected:
+        deleteEntries(s.selected, nb)
+        s.selected.clear()
+        refresh()
+      of AcSearch:
+        s.tabStateInfo = TabStateInfo(state: TsSearch, query: "")
+        refresh()
+      of AcEndSearch:
+        resetTab()
+        refresh()
 
 when isMainModule:
   var p = initOptParser()

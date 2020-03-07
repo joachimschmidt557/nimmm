@@ -45,7 +45,9 @@ and handle the configuration with environment variables just like `nnn` does.
 | <kbd>g</kbd> | `first` | first entry |
 | <kbd>G</kbd> | `last` | last entry |
 | <kbd>~</kbd> | `home` | go to home directory |
+| <kbd>.</kbd> | `toggle-hidden` | toggle display of hidden entries |
 | <kbd>/</kbd> | `search` | start searching |
+| <kbd>Esc</kbd> | `end-search` | stop searching |
 | <kbd>e</kbd> | `edit` | edit file in `$EDITOR` |
 | <kbd>p</kbd> | `pager` | view file in `$PAGER` |
 | <kbd>r</kbd> | `rename` | rename file/directory |
