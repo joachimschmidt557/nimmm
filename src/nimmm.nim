@@ -172,8 +172,8 @@ proc mainLoop(nb: var Nimbox) =
         resetTab()
         left()
       of AcRight:
-        resetTab()
         right()
+        resetTab()
       of AcHomeDir:
         safeSetCurDir(s, getHomeDir())
         resetTab()
