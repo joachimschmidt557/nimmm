@@ -31,7 +31,7 @@ proc search*(pattern: string, showHidden: bool, lsc: LsColors): tuple[
   for kind, path in walkDir(getCurrentDir()):
     let
       relative = extractFilename(path)
-    if relative.match(regex):
+    if relative.contains(regex):
       if showHidden or not isHidden(path):
         try:
           entries.add(DirEntry(path: path,
