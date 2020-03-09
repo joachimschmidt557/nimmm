@@ -61,6 +61,10 @@ proc mainLoop(nb: var Nimbox) =
       elif s.currentIndex > s.entries.high:
         s.currentIndex = s.entries.high
 
+  proc resetTab() =
+    s.tabStateInfo = TabStateInfo(state: TsNormal)
+    s.currentIndex = 0
+
   proc switchTab(i: int) =
     if i < s.tabs.len:
       s.currentTab = i
@@ -84,6 +88,7 @@ proc mainLoop(nb: var Nimbox) =
     else:
       safeSetCurDir(s, parentDir(getCurrentDir()))
     refresh()
+    resetTab()
     if prevDir != "/":
       s.currentIndex = getIndexOfDir(s.entries, prevDir)
 
@@ -94,16 +99,12 @@ proc mainLoop(nb: var Nimbox) =
         try:
           safeSetCurDir(s, s.currentEntry.path)
           refresh()
-          s.currentIndex = 0
+          resetTab()
         except:
           err = "Cannot open directory"
           safeSetCurDir(s, prev)
       elif s.currentEntry.info.kind == pcFile:
         openFile(s.currentEntry.path)
-
-  proc resetTab() =
-    s.tabStateInfo = TabStateInfo(state: TsNormal)
-    s.currentIndex = 0
 
   refresh()
 
@@ -122,19 +123,17 @@ proc mainLoop(nb: var Nimbox) =
         case event.sym
         of Symbol.Escape:
           resetTab()
-          refresh()
         of Symbol.Backspace:
           if s.tabStateInfo.query.len == 0:
             resetTab()
           else:
             s.tabStateInfo.query.setLen(s.tabStateInfo.query.high)
-          refresh()
         of Symbol.Enter:
           s.tabStateInfo = TabStateInfo(state: TsSearchResults, query: s.tabStateInfo.query)
-          refresh()
         else:
           s.tabStateInfo.query.add(event.ch)
-          refresh()
+
+        refresh()
       of EventType.Mouse, EventType.Resize, EventType.None:
         discard
     # Normal keymap
@@ -169,11 +168,9 @@ proc mainLoop(nb: var Nimbox) =
       of AcUp:
         up()
       of AcLeft:
-        resetTab()
         left()
       of AcRight:
         right()
-        resetTab()
       of AcHomeDir:
         safeSetCurDir(s, getHomeDir())
         resetTab()
