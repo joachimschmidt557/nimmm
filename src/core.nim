@@ -28,8 +28,15 @@ type
     info*: FileInfo
     style*: Style
 
+  ErrorKind* = enum
+    ## Possible errors nimmm encounters during browsing files
+    ErrNone,
+    ErrCannotCd,
+    ErrCannotShow,
+
   State* = object
     ## Represents a possible state of nimmm
+    error*: ErrorKind
     tabs*: seq[Tab]
     currentTab*: int
     showHidden*: bool
@@ -38,7 +45,8 @@ type
 
 proc initState*(): State =
   ## Initializes the default startup state
-  State(tabs: @[Tab(cd: getCurrentDir(), index: 0,
+  State(error: ErrNone,
+        tabs: @[Tab(cd: getCurrentDir(), index: 0,
                     stateInfo: TabStateInfo(state: TsNormal))],
         currentTab: 0,
         showHidden: false,

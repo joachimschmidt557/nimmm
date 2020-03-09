@@ -1,8 +1,8 @@
-import os, osproc, sequtils, strutils, re, sets, nimbox, options, parseopt
+import os, osproc, sets, nimbox, parseopt
 
 import lscolors
 
-import core, scan, draw, fsoperations, interactions, nimboxext, keymap
+import core, scan, draw, fsoperations, nimboxext, keymap
 
 proc spawnShell(nb: var Nimbox) =
   const
@@ -35,25 +35,22 @@ proc mainLoop(nb: var Nimbox) =
   var
     s = initState()
     lsc = parseLsColorsEnv()
-    err = ""
     keymap = keyMapFromEnv()
 
   proc refresh() =
+    s.error = ErrNone
+
     case s.tabStateInfo.state
     of TsNormal:
       var scanResult = scan(s.showHidden, lsc)
       s.entries = scanResult.entries
       if scanResult.error:
-        err = "Some entries couldn't be displayed"
-      else:
-        err = ""
+        s.error = ErrCannotShow
     of TsSearch, TsSearchResults:
       var scanResult = search(s.tabStateInfo.query, s.showHidden, lsc)
       s.entries = scanResult.entries
       if scanResult.error:
-        err = "Some entries couldn't be displayed"
-      else:
-        err = ""
+        s.error = ErrCannotShow
 
     if s.entries.len > 0:
       if s.currentIndex < 0:
@@ -101,7 +98,7 @@ proc mainLoop(nb: var Nimbox) =
           refresh()
           resetTab()
         except:
-          err = "Cannot open directory"
+          s.error = ErrCannotCd
           safeSetCurDir(s, prev)
       elif s.currentEntry.info.kind == pcFile:
         openFile(s.currentEntry.path)
@@ -110,7 +107,7 @@ proc mainLoop(nb: var Nimbox) =
 
   while true:
     nb.inputMode = inpEsc and inpMouse
-    redraw(s, err, nb)
+    redraw(s, nb)
 
     let
       event = nb.pollEvent()

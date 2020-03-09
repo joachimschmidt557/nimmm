@@ -179,10 +179,17 @@ proc drawSearchFooter(query: string, nb: var Nimbox) =
   nb.print(0, y, "search:", c8(clrYellow), c8(clrBlack))
   nb.print(8, y, query, c8(clrYellow), c8(clrBlack))
 
-proc redraw*(s: State, errMsg: string, nb: var Nimbox) =
+proc errMsg(err: ErrorKind): string =
+  case err
+  of ErrNone: ""
+  of ErrCannotCd: "Cannot open directory"
+  of ErrCannotShow: "Some entries couldn't be displayed"
+
+proc redraw*(s: State, nb: var Nimbox) =
   let
     topIndex = getTopIndex(s.entries.len, s.currentIndex, nb)
     bottomIndex = getBottomIndex(s.entries.len, topIndex, nb)
+    errMsg = s.error.errMsg()
 
   nb.clear()
   if nb.height() > 4:
