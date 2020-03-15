@@ -160,7 +160,7 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
     selectedStr = " " & $lenSelected & " selected"
     offsetH = entriesStr.len
     offsetS = offsetH + (if hidden: 2 else: 0)
-    offsetSelected = offsetS + (if hidden: 2 else: 0)
+    offsetSelected = offsetS + (if search: 2 else: 0)
     offsetErrMsg = offsetSelected + (if lenSelected >
         0: selectedStr.len else: 0)
   nb.print(0, y, entriesStr, c8(clrYellow), c8(clrBlack))
