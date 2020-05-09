@@ -79,8 +79,8 @@ proc left(s: var State, lsc: LsColors) =
     s.safeSetCurDir("/")
   else:
     s.safeSetCurDir(parentDir(getCurrentDir()))
-  s.refresh(lsc)
   s.resetTab()
+  s.refresh(lsc)
   if prevDir != "/":
     s.currentIndex = getIndexOfDir(s.entries, prevDir)
 
@@ -90,8 +90,8 @@ proc right(s: var State, lsc: LsColors) =
       let prev = getCurrentDir()
       try:
         s.safeSetCurDir(s.currentEntry.path)
-        s.refresh(lsc)
         s.resetTab()
+        s.refresh(lsc)
       except:
         s.error = ErrCannotCd
         s.safeSetCurDir(prev)
