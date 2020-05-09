@@ -8,13 +8,14 @@ proc spawnShell(nb: var Nimbox) =
   const
     fallback = "/bin/sh"
   nb.shutdown()
-  stdout.writeLine("")
-  stdout.writeLine("")
-  stdout.writeLine(r"  /\^/\^/\^/\ ")
-  stdout.writeLine(r" #############")
-  stdout.writeLine(r" ### nimmm ###")
-  stdout.writeLine(r" #############")
-  stdout.writeLine("")
+  stdout.writeLine("""
+
+ /\^/\^/\^/\ 
+#############
+### nimmm ###
+#############
+
+  """)
   try:
     let process = startProcess(getEnv("SHELL", fallback),
         options = {poUsePath, poParentStreams, poInteractive})
