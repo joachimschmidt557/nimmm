@@ -7,12 +7,9 @@ proc editFile*(file: string, nb: var Nimbox) =
     fallback = "vi"
   let
     editor = getEnv("EDITOR", fallback)
+    cmd = quoteShellCommand(@[editor, file])
   nb.shutdown()
-  let process = startProcess(editor,
-      args = @[file],
-      options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+  discard execShellCmd(cmd)
   nb = newNb()
 
 proc viewFile*(file: string, nb: var Nimbox) =
@@ -20,12 +17,9 @@ proc viewFile*(file: string, nb: var Nimbox) =
     fallback = "less"
   let
     pager = getEnv("PAGER", fallback)
+    cmd = quoteShellCommand(@[pager, file])
   nb.shutdown()
-  let process = startProcess(pager,
-      args = @[file],
-      options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+  discard execShellCmd(cmd)
   nb = newNb()
 
 proc openFile*(file: string) =
@@ -39,89 +33,68 @@ proc openFile*(file: string) =
 
 proc copyEntries*(entries: HashSet[string], nb: var Nimbox) =
   const
-    prog = "cp"
-    args = @["-r", "-i"]
+    cp = @["cp", "-r", "-i"]
   if entries.len < 1: return
   nb.shutdown()
   let
     files = toSeq(entries.items)
-    dest = getCurrentDir()
-  let process = startProcess(prog,
-      args = args & files & @[dest],
-      options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+    dest = @[getCurrentDir()]
+    cmd = quoteShellCommand(cp & files & dest)
+  discard execShellCmd(cmd)
   nb = newNb()
 
 proc moveEntries*(entries: HashSet[string], nb: var Nimbox) =
   const
-    prog = "mv"
-    args = @["-i"]
+    mv = @["mv", "-i"]
   if entries.len < 1: return
   nb.shutdown()
   let
     files = toSeq(entries.items)
-    dest = getCurrentDir()
-  let process = startProcess(prog,
-      args = args & files & @[dest],
-      options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+    dest = @[getCurrentDir()]
+    cmd = quoteShellCommand(mv & files & dest)
+  discard execShellCmd(cmd)
   nb = newNb()
 
 proc deleteEntries*(entries: HashSet[string], nb: var Nimbox) =
   const
-    prog = "rm"
-    args = @["-r", "-i"]
+    rm = @["rm", "-r", "-i"]
   if entries.len < 1: return
   nb.shutdown()
   let
     files = toSeq(entries.items)
     force = if askYorN("use force? [y/n]", nb): @["-f"] else: @[]
-  let process = startProcess(prog,
-    args = args & force & files,
-    options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+    cmd = quoteShellCommand(rm & force & files)
+  discard execShellCmd(cmd)
   nb = newNb()
 
 proc newFile*(nb: var Nimbox) =
   const
-    cmd = "touch"
+    touch = "touch"
   nb.shutdown()
   let
-    name = askString(" -> " & cmd & " ", nb)
-  let process = startProcess(cmd,
-      args = @[name],
-      options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+    name = askString(" -> " & touch & " ", nb)
+    cmd = quoteShellCommand(@[touch, name])
+  discard execShellCmd(cmd)
   nb = newNb()
 
 proc newDir*(nb: var Nimbox) =
   const
-    cmd = "mkdir"
+    mkdir = "mkdir"
   nb.shutdown()
   let
-    name = askString(" -> " & cmd & " ", nb)
-  let process = startProcess(cmd,
-      args = @[name],
-      options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+    name = askString(" -> " & mkdir & " ", nb)
+    cmd = quoteShellCommand(@[mkdir, name])
+  discard execShellCmd(cmd)
   nb = newNb()
 
 proc rename*(path: string, nb: var Nimbox) =
   const
-    cmd = "mv"
+    rename = "mv"
   nb.shutdown()
   let
     oldName = path
-    newName = askString(" -> " & cmd & oldName & " ", nb, oldName)
-  let process = startProcess(cmd,
-      args = @[oldName, newName],
-      options = {poUsePath, poParentStreams, poInteractive})
-  let exitCode = process.waitForExit()
-  process.close()
+    newName = askString(" -> " & rename & oldName & " ", nb, oldName)
+    cmd = quoteShellCommand(@[rename, oldName, newName])
+  discard execShellCmd(cmd)
   nb = newNb()
 

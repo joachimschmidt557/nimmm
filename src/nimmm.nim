@@ -16,13 +16,7 @@ proc spawnShell(nb: var Nimbox) =
 #############
 
   """)
-  try:
-    let process = startProcess(getEnv("SHELL", fallback),
-        options = {poUsePath, poParentStreams, poInteractive})
-    let exitCode = process.waitForExit()
-    process.close()
-  except:
-    discard
+  discard execShellCmd(getEnv("SHELL", fallback))
   nb = newNb()
 
 proc safeSetCurDir(s: var State, path: string) =
