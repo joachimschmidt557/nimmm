@@ -2,6 +2,7 @@
 ##
 ## These functions help in toggling the 256-colors option
 
+import os
 import nimbox
 
 template newNb*(): Nimbox =
@@ -15,6 +16,11 @@ template colors256Mode*(): bool =
   ## Should the 256-colors mode be turned on?
   existsEnv("NIMMM_256")
 
+template withoutNimbox*(nb: var Nimbox, body: untyped) =
+  nb.shutdown()
+  body
+  nb = newNb()
+  
 template c8*(color:int): int =
   ## Convert this color (`ck8`) into
   ## an int with regards to the current color mode

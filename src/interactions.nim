@@ -1,6 +1,6 @@
-import nimbox, noise
+import noise
 
-proc askYorN*(question: string, nb: var Nimbox): bool =
+proc askYorN*(question: string): bool =
   stdout.write(question)
   while true:
     case getCh():
@@ -11,7 +11,7 @@ proc askYorN*(question: string, nb: var Nimbox): bool =
       else:
         continue
 
-proc askString*(question: string, nb: var Nimbox, preload = ""): string =
+proc askString*(question: string, preload = ""): string =
   var noise = Noise.init()
   noise.preloadBuffer(preload)
   noise.setPrompt(question)
@@ -19,4 +19,3 @@ proc askString*(question: string, nb: var Nimbox, preload = ""): string =
 
   if not ok: return ""
   return noise.getLine
-

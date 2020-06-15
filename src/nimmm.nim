@@ -2,22 +2,7 @@ import os, osproc, sets, nimbox, parseopt
 
 import lscolors
 
-import core, scan, draw, fsoperations, nimboxext, keymap
-
-proc spawnShell(nb: var Nimbox) =
-  const
-    fallback = "/bin/sh"
-  nb.shutdown()
-  stdout.writeLine("""
-
- /\^/\^/\^/\ 
-#############
-### nimmm ###
-#############
-
-  """)
-  discard execShellCmd(getEnv("SHELL", fallback))
-  nb = newNb()
+import core, scan, draw, external, nimboxext, keymap, interactions
 
 proc safeSetCurDir(s: var State, path: string) =
   var safeDir = path
@@ -136,7 +121,8 @@ proc mainLoop(nb: var Nimbox) =
       of AcQuit:
         break
       of AcShell:
-        spawnShell(nb)
+        withoutNimbox(nb):
+          spawnShell()
         s.refresh(lsc)
       of AcToggleHidden:
         s.showHidden = not s.showHidden
@@ -200,31 +186,39 @@ proc mainLoop(nb: var Nimbox) =
       of AcEdit:
         if not s.empty:
           if s.currentEntry.info.kind == pcFile:
-            editFile(s.currentEntry.path, nb)
+            withoutNimbox(nb):
+              editFile(s.currentEntry.path)
             s.refresh(lsc)
       of AcPager:
         if not s.empty:
           if s.currentEntry.info.kind == pcFile:
-            viewFile(s.currentEntry.path, nb)
+            withoutNimbox(nb):
+              viewFile(s.currentEntry.path)
       of AcNewFile:
-        newFile(nb)
+        withoutNimbox(nb):
+          newFile(askString("new file: "))
         s.refresh(lsc)
       of AcNewDir:
-        newDir(nb)
+        withoutNimbox(nb):
+          newDir(askString("new directory: "))
         s.refresh(lsc)
       of AcRename:
-        rename(s.currentEntry.relative, nb)
+        withoutNimbox(nb):
+          rename(s.currentEntry.relative, askString("rename to: "))
         s.refresh(lsc)
       of AcCopySelected:
-        copyEntries(s.selected, nb)
+        withoutNimbox(nb):
+          copyEntries(s.selected)
         s.selected.clear()
         s.refresh(lsc)
       of AcMoveSelected:
-        moveEntries(s.selected, nb)
+        withoutNimbox(nb):
+          moveEntries(s.selected)
         s.selected.clear()
         s.refresh(lsc)
       of AcDeleteSelected:
-        deleteEntries(s.selected, nb)
+        withoutNimbox(nb):
+          deleteEntries(s.selected, askYorN("use force? [y/n]: "))
         s.selected.clear()
         s.refresh(lsc)
       of AcSearch:

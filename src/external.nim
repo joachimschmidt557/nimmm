@@ -1,26 +1,33 @@
-import os, osproc, nimbox, sets, sequtils
+import os, osproc, sets, sequtils
 
-import interactions, nimboxext
+proc spawnShell*() =
+  const
+    fallback = "/bin/sh"
+  stdout.writeLine("""
 
-proc editFile*(file: string, nb: var Nimbox) =
+ /\^/\^/\^/\ 
+#############
+### nimmm ###
+#############
+
+  """)
+  discard execShellCmd(getEnv("SHELL", fallback))
+
+proc editFile*(file: string) =
   const
     fallback = "vi"
   let
     editor = getEnv("EDITOR", fallback)
     cmd = quoteShellCommand(@[editor, file])
-  nb.shutdown()
   discard execShellCmd(cmd)
-  nb = newNb()
 
-proc viewFile*(file: string, nb: var Nimbox) =
+proc viewFile*(file: string) =
   const
     fallback = "less"
   let
     pager = getEnv("PAGER", fallback)
     cmd = quoteShellCommand(@[pager, file])
-  nb.shutdown()
   discard execShellCmd(cmd)
-  nb = newNb()
 
 proc openFile*(file: string) =
   const
@@ -31,70 +38,53 @@ proc openFile*(file: string) =
       args = @[file],
       options = {poStdErrToStdOut, poUsePath})
 
-proc copyEntries*(entries: HashSet[string], nb: var Nimbox) =
+proc copyEntries*(entries: HashSet[string]) =
   const
     cp = @["cp", "-r", "-i"]
   if entries.len < 1: return
-  nb.shutdown()
   let
     files = toSeq(entries.items)
     dest = @[getCurrentDir()]
     cmd = quoteShellCommand(cp & files & dest)
   discard execShellCmd(cmd)
-  nb = newNb()
 
-proc moveEntries*(entries: HashSet[string], nb: var Nimbox) =
+proc moveEntries*(entries: HashSet[string]) =
   const
     mv = @["mv", "-i"]
   if entries.len < 1: return
-  nb.shutdown()
   let
     files = toSeq(entries.items)
     dest = @[getCurrentDir()]
     cmd = quoteShellCommand(mv & files & dest)
   discard execShellCmd(cmd)
-  nb = newNb()
 
-proc deleteEntries*(entries: HashSet[string], nb: var Nimbox) =
+proc deleteEntries*(entries: HashSet[string], force: bool) =
   const
     rm = @["rm", "-r", "-i"]
   if entries.len < 1: return
-  nb.shutdown()
   let
     files = toSeq(entries.items)
-    force = if askYorN("use force? [y/n]", nb): @["-f"] else: @[]
-    cmd = quoteShellCommand(rm & force & files)
+    forceFlag = if force: @["-f"] else: @[]
+    cmd = quoteShellCommand(rm & forceFlag & files)
   discard execShellCmd(cmd)
-  nb = newNb()
 
-proc newFile*(nb: var Nimbox) =
+proc newFile*(name: string) =
   const
     touch = "touch"
-  nb.shutdown()
   let
-    name = askString(" -> " & touch & " ", nb)
     cmd = quoteShellCommand(@[touch, name])
   discard execShellCmd(cmd)
-  nb = newNb()
 
-proc newDir*(nb: var Nimbox) =
+proc newDir*(name: string) =
   const
     mkdir = "mkdir"
-  nb.shutdown()
   let
-    name = askString(" -> " & mkdir & " ", nb)
     cmd = quoteShellCommand(@[mkdir, name])
   discard execShellCmd(cmd)
-  nb = newNb()
 
-proc rename*(path: string, nb: var Nimbox) =
+proc rename*(oldName: string, newName: string) =
   const
     rename = "mv"
-  nb.shutdown()
   let
-    oldName = path
-    newName = askString(" -> " & rename & oldName & " ", nb, oldName)
     cmd = quoteShellCommand(@[rename, oldName, newName])
   discard execShellCmd(cmd)
-  nb = newNb()
-
