@@ -24,7 +24,7 @@ proc scan*(showHidden: bool, lsc: LsColors): tuple[entries: seq[DirEntry], error
 proc search*(pattern: string, showHidden: bool, lsc: LsColors): tuple[
     entries: seq[DirEntry], error: bool] =
   let
-    regex = re(pattern)
+    regex = re(pattern, flags = {reStudy, reIgnoreCase})
   var
     error = false
     entries: seq[DirEntry]
