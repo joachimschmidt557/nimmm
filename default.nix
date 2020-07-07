@@ -24,7 +24,7 @@ let
 
 in pkgs.stdenv.mkDerivation rec {
   pname = "nimmm";
-  version = "0.1.2";
+  version = "master";
 
   src = ./.;
   # src = fetchFromGitHub {

@@ -172,12 +172,15 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
     nb.print(offsetSelected, y, selectedStr)
   if errMsg.len > 0:
     nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), c8(clrBlack))
+  nb.cursor = (TB_HIDE_CURSOR, TB_HIDE_CURSOR)
 
-proc drawSearchFooter(query: string, nb: var Nimbox) =
+proc drawInputFooter(prompt: string, query: string, nb: var Nimbox) =
   let
     y = nb.height() - 1
-  nb.print(0, y, "search:", c8(clrYellow), c8(clrBlack))
-  nb.print(8, y, query, c8(clrYellow), c8(clrBlack))
+    offset = prompt.len + 1
+  nb.print(0, y, prompt, c8(clrYellow), c8(clrBlack))
+  nb.print(offset, y, query, c8(clrYellow), c8(clrBlack))
+  nb.cursor = (offset + query.len, y)
 
 proc errMsg(err: ErrorKind): string =
   case err
@@ -212,7 +215,7 @@ proc redraw*(s: State, nb: var Nimbox) =
                  s.showHidden, s.tabStateInfo.state == TsSearchResults,
                  errMsg, nb)
     of TsSearch:
-      drawSearchFooter(s.tabStateInfo.query, nb)
+      drawInputFooter("search:", s.tabStateInfo.query, nb)
 
   nb.present()
 
