@@ -125,3 +125,9 @@ $ nimble install
 ```shell
 $ nimble install nimmm
 ```
+
+### With Nix
+
+```shell
+$ nix-env -i nimmm
+```
