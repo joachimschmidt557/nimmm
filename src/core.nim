@@ -41,6 +41,8 @@ type
     currentTab*: int
     showHidden*: bool
     entries*: seq[DirEntry]
+    visibleEntriesMask*: seq[bool]
+    visibleEntries*: seq[int]
     selected*: HashSet[string]
 
 proc initState*(): State =
@@ -51,6 +53,8 @@ proc initState*(): State =
         currentTab: 0,
         showHidden: false,
         entries: @[],
+        visibleEntriesMask: @[],
+        visibleEntries: @[],
         selected: initHashSet[string]())
 
 template currentIndex*(s: State): int =
@@ -65,11 +69,11 @@ template `currentIndex=`*(s: var State, i: int) =
 
 template currentEntry*(s: State): DirEntry =
   ## Gets the current entry
-  s.entries[s.currentIndex]
+  s.entries[s.visibleEntries[s.currentIndex]]
 
 template empty*(s: State): bool =
   ## Returns whether there are no entries
-  s.entries.len < 1
+  s.visibleEntries.len < 1
 
 template tabStateInfo*(s: State): TabStateInfo =
   ## Gets the state info for the current tab

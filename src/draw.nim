@@ -1,4 +1,4 @@
-import times, sets, os, strformat, nimbox, strutils, sequtils, algorithm, options
+import times, sets, os, strformat, nimbox, strutils, sequtils, options
 
 import lscolors
 import lscolors/style
@@ -22,12 +22,6 @@ proc sizeToString(size: BiggestInt): string =
     result = fmt"{siz/g:7}" & "G"
   else:
     result = fmt"{siz/t:7}" & "T"
-
-proc getIndexOfDir*(entries: seq[DirEntry], dir: string): int =
-  let
-    paths = entries.mapIt(it.path)
-  result = paths.binarySearch(dir, cmpIgnoreCase)
-  if result < 0: result = 0
 
 proc getTopIndex(lenEntries: int, index: int, nb: Nimbox): int =
   let
@@ -190,18 +184,18 @@ proc errMsg(err: ErrorKind): string =
 
 proc redraw*(s: State, nb: var Nimbox) =
   let
-    topIndex = getTopIndex(s.entries.len, s.currentIndex, nb)
-    bottomIndex = getBottomIndex(s.entries.len, topIndex, nb)
+    topIndex = getTopIndex(s.visibleEntries.len, s.currentIndex, nb)
+    bottomIndex = getBottomIndex(s.visibleEntries.len, topIndex, nb)
     errMsg = s.error.errMsg()
 
   nb.clear()
   if nb.height() > 4:
     drawHeader(s.tabs.len, s.currentTab, nb)
 
-  if s.entries.len < 1:
+  if s.visibleEntries.len < 1:
     nb.print(0, 2, "Empty directory", c8(clrYellow), c8(clrBlack))
   for i in topIndex .. bottomIndex:
-    let entry = s.entries[i]
+    let entry = s.entries[s.visibleEntries[i]]
     drawDirEntry(entry,
                 i-topIndex+2,
                 (i == s.currentIndex),
@@ -211,7 +205,7 @@ proc redraw*(s: State, nb: var Nimbox) =
   if nb.height() > 4:
     case s.tabStateInfo.state
     of TsNormal, TsSearchResults:
-      drawFooter(s.currentIndex, s.entries.len, s.selected.len,
+      drawFooter(s.currentIndex, s.visibleEntries.len, s.selected.len,
                  s.showHidden, s.tabStateInfo.state == TsSearchResults,
                  errMsg, nb)
     of TsSearch:

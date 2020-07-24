@@ -1,8 +1,14 @@
-import os, osproc, sets, nimbox, parseopt
+import os, osproc, sets, nimbox, parseopt, sequtils, algorithm, strutils, options, re
 
 import lscolors
 
 import core, scan, draw, external, nimboxext, keymap, interactions
+
+proc getIndexOfItem(s: State, name: string): int =
+  let
+    paths = s.entries.mapIt(it.path)
+    i = paths.binarySearch(name, cmpIgnoreCase)
+  if i > 0 and s.visibleEntriesMask[i]: s.visibleEntries.binarySearch(i) else: 0
 
 proc safeSetCurDir(s: var State, path: string) =
   var safeDir = path
@@ -11,27 +17,44 @@ proc safeSetCurDir(s: var State, path: string) =
   setCurrentDir(safeDir)
   s.tabs[s.currentTab].cd = getCurrentDir()
 
-proc refresh(s: var State, lsc: LsColors) =
-  s.error = ErrNone
+proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
+  let
+    notHidden = showHidden or not isHidden(entry.path)
+    matchesRe = if regex.isSome: entry.path.contains(regex.get) else: true
+  matchesRe and notHidden
 
-  case s.tabStateInfo.state
-  of TsNormal:
-    var scanResult = scan(s.showHidden, lsc)
-    s.entries = scanResult.entries
-    if scanResult.error:
-      s.error = ErrCannotShow
-  of TsSearch, TsSearchResults:
-    var scanResult = search(s.tabStateInfo.query, s.showHidden, lsc)
-    s.entries = scanResult.entries
-    if scanResult.error:
-      s.error = ErrCannotShow
+proc refresh(s: var State) =
+  let regex = case s.tabStateInfo.state
+              of TsNormal: none(Regex)
+              of TsSearch, TsSearchResults:
+                let compiled = re(s.tabStateInfo.query, flags = {reStudy, reIgnoreCase})
+                some(compiled)
 
-  if s.entries.len > 0:
+  s.visibleEntries = @[]
+
+  for i, entry in s.entries:
+    let visible = visible(entry, s.showHidden, regex)
+    s.visibleEntriesMask[i] = visible
+    if visible: s.visibleEntries &= i
+
+  if s.visibleEntries.len > 0:
     if s.currentIndex < 0:
       s.currentIndex = 0
-    elif s.currentIndex > s.entries.high:
-      s.currentIndex = s.entries.high
+    elif s.currentIndex > s.visibleEntries.high:
+      s.currentIndex = s.visibleEntries.high
 
+proc rescan(s: var State, lsc: LsColors) =
+  s.error = ErrNone
+
+  let scanResult = scan(lsc)
+  s.entries = scanResult.entries
+  s.visibleEntriesMask = repeat(true, s.entries.len)
+  s.visibleEntries = @[]
+  if scanResult.error:
+    s.error = ErrCannotShow
+
+  s.refresh()
+  
 proc resetTab(s: var State) =
   s.tabStateInfo = TabStateInfo(state: TsNormal)
   s.currentIndex = 0
@@ -40,16 +63,16 @@ proc switchTab(s: var State, lsc: LsColors, i: int) =
   if i < s.tabs.len:
     s.currentTab = i
     s.safeSetCurDir(s.tabs[s.currentTab].cd)
-    s.refresh(lsc)
+    s.rescan(lsc)
 
 proc up(s: var State) =
   s.currentIndex = s.currentIndex - 1
   if s.currentIndex < 0:
-    s.currentIndex = s.entries.high
+    s.currentIndex = s.visibleEntries.high
 
 proc down(s: var State) =
   s.currentIndex = s.currentIndex + 1
-  if s.currentIndex > s.entries.high:
+  if s.currentIndex > s.visibleEntries.high:
     s.currentIndex = 0
 
 proc left(s: var State, lsc: LsColors) =
@@ -59,9 +82,9 @@ proc left(s: var State, lsc: LsColors) =
   else:
     s.safeSetCurDir(parentDir(getCurrentDir()))
   s.resetTab()
-  s.refresh(lsc)
+  s.rescan(lsc)
   if prevDir != "/":
-    s.currentIndex = getIndexOfDir(s.entries, prevDir)
+    s.currentIndex = getIndexOfItem(s, prevDir)
 
 proc right(s: var State, lsc: LsColors) =
   if not s.empty:
@@ -70,7 +93,7 @@ proc right(s: var State, lsc: LsColors) =
       try:
         s.safeSetCurDir(s.currentEntry.path)
         s.resetTab()
-        s.refresh(lsc)
+        s.rescan(lsc)
       except:
         s.error = ErrCannotCd
         s.safeSetCurDir(prev)
@@ -84,14 +107,12 @@ proc mainLoop(nb: var Nimbox) =
   var
     s = initState()
 
-  s.refresh(lsc)
+  s.rescan(lsc)
 
   while true:
-    nb.inputMode = inpEsc and inpMouse
     redraw(s, nb)
 
-    let
-      event = nb.pollEvent()
+    let event = nb.pollEvent()
 
     case s.tabStateInfo.state
     # Special keymap for incremental search (overrides custom keymaps)
@@ -111,7 +132,7 @@ proc mainLoop(nb: var Nimbox) =
         else:
           s.tabStateInfo.query.add(event.ch)
 
-        s.refresh(lsc)
+        s.refresh()
       of EventType.Mouse, EventType.Resize, EventType.None:
         discard
     # Normal keymap
@@ -123,10 +144,10 @@ proc mainLoop(nb: var Nimbox) =
       of AcShell:
         withoutNimbox(nb):
           spawnShell()
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcToggleHidden:
         s.showHidden = not s.showHidden
-        s.refresh(lsc)
+        s.refresh()
       of AcSelect:
         if not s.empty:
           if not s.selected.contains(s.currentEntry.path):
@@ -134,14 +155,15 @@ proc mainLoop(nb: var Nimbox) =
           else:
             s.selected.excl(s.currentEntry.path)
       of AcSelectAll:
-        for entry in s.entries:
+        for i in s.visibleEntries:
+          let entry = s.entries[i]
           s.selected.incl(entry.path)
       of AcClearSelection:
         s.selected.clear()
       of AcFirst:
         s.currentIndex = 0
       of AcLast:
-        s.currentIndex = s.entries.high
+        s.currentIndex = s.visibleEntries.high
       of AcDown:
         s.down()
       of AcUp:
@@ -153,7 +175,7 @@ proc mainLoop(nb: var Nimbox) =
       of AcHomeDir:
         s.safeSetCurDir(getHomeDir())
         s.resetTab()
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcNewTab:
         s.tabs.add(Tab(cd: getCurrentDir(),
                        index: s.currentIndex,
@@ -188,7 +210,7 @@ proc mainLoop(nb: var Nimbox) =
           if s.currentEntry.info.kind == pcFile:
             withoutNimbox(nb):
               editFile(s.currentEntry.path)
-            s.refresh(lsc)
+            s.rescan(lsc)
       of AcPager:
         if not s.empty:
           if s.currentEntry.info.kind == pcFile:
@@ -197,36 +219,35 @@ proc mainLoop(nb: var Nimbox) =
       of AcNewFile:
         withoutNimbox(nb):
           newFile(askString("new file: "))
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcNewDir:
         withoutNimbox(nb):
           newDir(askString("new directory: "))
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcRename:
         withoutNimbox(nb):
           rename(s.currentEntry.relative, askString("rename to: "))
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcCopySelected:
         withoutNimbox(nb):
           copyEntries(s.selected)
         s.selected.clear()
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcMoveSelected:
         withoutNimbox(nb):
           moveEntries(s.selected)
         s.selected.clear()
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcDeleteSelected:
         withoutNimbox(nb):
           deleteEntries(s.selected, askYorN("use force? [y/n]: "))
         s.selected.clear()
-        s.refresh(lsc)
+        s.rescan(lsc)
       of AcSearch:
         s.tabStateInfo = TabStateInfo(state: TsSearch, query: "")
-        s.refresh(lsc)
       of AcEndSearch:
         s.resetTab()
-        s.refresh(lsc)
+        s.refresh()
 
 when isMainModule:
   var p = initOptParser()
@@ -239,5 +260,6 @@ when isMainModule:
       else: continue
 
   var nb = newNb()
+  nb.inputMode = inpEsc and inpMouse
   addQuitProc(proc () {.noconv.} = nb.shutdown())
   mainLoop(nb)
