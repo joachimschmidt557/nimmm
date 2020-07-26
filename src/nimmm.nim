@@ -20,7 +20,7 @@ proc safeSetCurDir(s: var State, path: string) =
 proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
   let
     notHidden = showHidden or not isHidden(entry.path)
-    matchesRe = if regex.isSome: entry.path.contains(regex.get) else: true
+    matchesRe = if regex.isSome: extractFilename(entry.path).contains(regex.get) else: true
   matchesRe and notHidden
 
 proc refresh(s: var State) =
