@@ -8,6 +8,7 @@ import nimbox
 template newNb*(): Nimbox =
   ## Wrapper for `newNimbox`
   let nb = newNimbox()
+  nb.inputMode = inpEsc and inpMouse
   if colors256Mode():
     nb.outputMode = out256
   nb

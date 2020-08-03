@@ -260,6 +260,5 @@ when isMainModule:
       else: continue
 
   var nb = newNb()
-  nb.inputMode = inpEsc and inpMouse
   addQuitProc(proc () {.noconv.} = nb.shutdown())
   mainLoop(nb)
