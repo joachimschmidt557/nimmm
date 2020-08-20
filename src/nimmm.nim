@@ -76,15 +76,13 @@ proc down(s: var State) =
     s.currentIndex = 0
 
 proc left(s: var State, lsc: LsColors) =
-  let prevDir = getCurrentDir()
   if parentDir(getCurrentDir()) == "":
-    s.safeSetCurDir("/")
-  else:
-    s.safeSetCurDir(parentDir(getCurrentDir()))
+    return
+  let prevDir = getCurrentDir()
+  s.safeSetCurDir(parentDir(getCurrentDir()))
   s.resetTab()
   s.rescan(lsc)
-  if prevDir != "/":
-    s.currentIndex = getIndexOfItem(s, prevDir)
+  s.currentIndex = getIndexOfItem(s, prevDir)
 
 proc right(s: var State, lsc: LsColors) =
   if not s.empty:
