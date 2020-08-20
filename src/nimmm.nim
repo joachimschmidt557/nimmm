@@ -142,8 +142,10 @@ proc mainLoop(nb: var Nimbox) =
       of AcQuit:
         break
       of AcShell:
+        let pwdBackup = getCurrentDir()
         withoutNimbox(nb):
           spawnShell()
+        s.safeSetCurDir(pwdBackup)
         s.rescan(lsc)
       of AcToggleHidden:
         s.showHidden = not s.showHidden
@@ -234,14 +236,18 @@ proc mainLoop(nb: var Nimbox) =
         s.selected.clear()
         s.rescan(lsc)
       of AcMoveSelected:
+        let pwdBackup = getCurrentDir()
         withoutNimbox(nb):
           moveEntries(s.selected)
         s.selected.clear()
+        s.safeSetCurDir(pwdBackup)
         s.rescan(lsc)
       of AcDeleteSelected:
+        let pwdBackup = getCurrentDir()
         withoutNimbox(nb):
           deleteEntries(s.selected, askYorN("use force? [y/n]: "))
         s.selected.clear()
+        s.safeSetCurDir(pwdBackup)
         s.rescan(lsc)
       of AcSearch:
         s.tabStateInfo = TabStateInfo(state: TsSearch, query: "")
