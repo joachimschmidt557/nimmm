@@ -25,12 +25,18 @@ proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
         regex.get) else: true
   matchesRe and notHidden
 
-proc refresh(s: var State) =
-  let regex = case s.tabStateInfo.state
+proc compileRegex(tabStateInfo: TabStateInfo): Option[Regex] =
+  case tabStateInfo.state
     of TsNormal: none(Regex)
     of TsSearch, TsSearchResults:
-      let compiled = re(s.tabStateInfo.query, flags = {reStudy, reIgnoreCase})
-      some(compiled)
+      try:
+        let compiled = re(tabStateInfo.query, flags = {reStudy, reIgnoreCase})
+        some(compiled)
+      except RegexError:
+        none(Regex)
+
+proc refresh(s: var State) =
+  let regex = compileRegex(s.tabStateInfo)
 
   s.visibleEntries = @[]
 
