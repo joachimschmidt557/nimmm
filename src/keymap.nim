@@ -49,52 +49,56 @@ type
     mouse: TableRef[Mouse, Action]
 
 let
-  actionNames = {"quit":AcQuit, "shell":AcShell, "toggle-hidden":AcToggleHidden,
-                  "select-all":AcSelectAll, "select-none":AcClearSelection,
-                  "first":AcFirst, "last":AcLast, "down":AcDown,
-                  "up":AcUp, "left":AcLeft, "right":AcRight,
-                  "home":AcHomeDir, "new-tab":AcNewTab, "close-tab":AcCloseTab,
-                  "tab-1":AcTab1, "tab-2":AcTab2, "tab-3":AcTab3,
-                  "tab-4":AcTab4, "tab-5":AcTab5, "tab-6":AcTab6,
-                  "tab-7":AcTab7, "tab-8":AcTab8, "tab-9":AcTab9,
-                  "tab-10":AcTab10, "edit":AcEdit, "pager":AcPager, "rename":AcRename,
-                  "new-file":AcNewFile, "new-dir":AcNewDir, "copy":AcCopySelected,
-                  "move":AcMoveSelected, "delete":AcDeleteSelected,
-                  "search":AcSearch, "none":AcNone, "select":AcSelect,
-                  "end-search":AcEndSearch
-                }.newTable
+  actionNames = {"quit": AcQuit, "shell": AcShell, "toggle-hidden": AcToggleHidden,
+                  "select-all": AcSelectAll, "select-none": AcClearSelection,
+                  "first": AcFirst, "last": AcLast, "down": AcDown,
+                  "up": AcUp, "left": AcLeft, "right": AcRight,
+                  "home": AcHomeDir, "new-tab": AcNewTab,
+                  "close-tab": AcCloseTab,
+                  "tab-1": AcTab1, "tab-2": AcTab2, "tab-3": AcTab3,
+                  "tab-4": AcTab4, "tab-5": AcTab5, "tab-6": AcTab6,
+                  "tab-7": AcTab7, "tab-8": AcTab8, "tab-9": AcTab9,
+                  "tab-10": AcTab10, "edit": AcEdit, "pager": AcPager,
+                  "rename": AcRename,
+                  "new-file": AcNewFile, "new-dir": AcNewDir,
+                  "copy": AcCopySelected,
+                  "move": AcMoveSelected, "delete": AcDeleteSelected,
+                  "search": AcSearch, "none": AcNone, "select": AcSelect,
+                  "end-search": AcEndSearch
+    }.newTable
 
-  symbolNames = {"insert":Symbol.Insert, "delete":Symbol.Delete,
-                  "home":Symbol.Home, "end":Symbol.End,
-                  "pgup":Symbol.PgUp, "pgdn":Symbol.PgDn,
-                  "up":Symbol.Up, "down":Symbol.Down,
-                  "left":Symbol.Left, "right":Symbol.Right,
-                  "ESC":Symbol.Escape, "SPC":Symbol.Space,
-                  "TAB":Symbol.Tab, "RET":Symbol.Enter,
-                  "DEL":Symbol.Backspace}.newTable
-  mouseNames = {"left":Mouse.Left, "right":Mouse.Right,
-                 "middle":Mouse.Middle, "wheel-up":Mouse.WheelUp,
-                 "wheel-down":Mouse.WheelDown}.newTable
+  symbolNames = {"insert": Symbol.Insert, "delete": Symbol.Delete,
+                  "home": Symbol.Home, "end": Symbol.End,
+                  "pgup": Symbol.PgUp, "pgdn": Symbol.PgDn,
+                  "up": Symbol.Up, "down": Symbol.Down,
+                  "left": Symbol.Left, "right": Symbol.Right,
+                  "ESC": Symbol.Escape, "SPC": Symbol.Space,
+                  "TAB": Symbol.Tab, "RET": Symbol.Enter,
+                  "DEL": Symbol.Backspace}.newTable
+  mouseNames = {"left": Mouse.Left, "right": Mouse.Right,
+                 "middle": Mouse.Middle, "wheel-up": Mouse.WheelUp,
+                 "wheel-down": Mouse.WheelDown}.newTable
 
-  defaultChars = {'q':AcQuit, '!':AcShell, '.':AcToggleHidden,
-                   'a':AcSelectAll, 's':AcClearSelection,
-                   'g':AcFirst, 'G':AcLast, 'j':AcDown,
-                   'k':AcUp, 'h':AcLeft, 'l':AcRight,
-                   '~':AcHomeDir, 't':AcNewTab, 'w':AcCloseTab,
-                   '1':AcTab1, '2':AcTab2, '3':AcTab3,
-                   '4':AcTab4, '5':AcTab5, '6':AcTab6,
-                   '7':AcTab7, '8':AcTab8, '9':AcTab9,
-                   '0':AcTab10, 'e':AcEdit, 'p':AcPager, 'r':AcRename,
-                   'f':AcNewFile, 'd':AcNewDir, 'P':AcCopySelected,
-                   'V':AcMoveSelected, 'X':AcDeleteSelected,
-                   '/':AcSearch,
-                }.newTable
-  defaultSymbols = {Symbol.Enter:AcRight, Symbol.Backspace:AcLeft,
-                     Symbol.Space:AcSelect, Symbol.Up:AcUp,
-                     Symbol.Down:AcDown, Symbol.Left:AcLeft,
-                     Symbol.Right:AcRight, Symbol.Escape:AcEndSearch}.newTable
-  defaultMouse = {Mouse.WheelUp:AcUp, Mouse.WheelDown:AcDown}.newTable
-  defaultKeymap* = Keymap(chars:defaultChars, symbols:defaultSymbols, mouse:defaultMouse)
+  defaultChars = {'q': AcQuit, '!': AcShell, '.': AcToggleHidden,
+                   'a': AcSelectAll, 's': AcClearSelection,
+                   'g': AcFirst, 'G': AcLast, 'j': AcDown,
+                   'k': AcUp, 'h': AcLeft, 'l': AcRight,
+                   '~': AcHomeDir, 't': AcNewTab, 'w': AcCloseTab,
+                   '1': AcTab1, '2': AcTab2, '3': AcTab3,
+                   '4': AcTab4, '5': AcTab5, '6': AcTab6,
+                   '7': AcTab7, '8': AcTab8, '9': AcTab9,
+                   '0': AcTab10, 'e': AcEdit, 'p': AcPager, 'r': AcRename,
+                   'f': AcNewFile, 'd': AcNewDir, 'P': AcCopySelected,
+                   'V': AcMoveSelected, 'X': AcDeleteSelected,
+                   '/': AcSearch,
+    }.newTable
+  defaultSymbols = {Symbol.Enter: AcRight, Symbol.Backspace: AcLeft,
+                     Symbol.Space: AcSelect, Symbol.Up: AcUp,
+                     Symbol.Down: AcDown, Symbol.Left: AcLeft,
+                     Symbol.Right: AcRight, Symbol.Escape: AcEndSearch}.newTable
+  defaultMouse = {Mouse.WheelUp: AcUp, Mouse.WheelDown: AcDown}.newTable
+  defaultKeymap* = Keymap(chars: defaultChars, symbols: defaultSymbols,
+      mouse: defaultMouse)
 
 proc keymapFromEnv*(): Keymap =
   ## Loads the keymap from environment variables
@@ -117,7 +121,7 @@ proc keymapFromEnv*(): Keymap =
       if name in mouseNames:
         result.mouse[mouseNames[name]] = action
 
-proc nimboxEventToAction*(event:nimbox.Event, keymap:Keymap): Action =
+proc nimboxEventToAction*(event: nimbox.Event, keymap: Keymap): Action =
   ## Decides whether an action is associated with this event and in that case,
   ## returns that action
   case event.kind:

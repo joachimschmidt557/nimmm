@@ -21,8 +21,8 @@ template withoutNimbox*(nb: var Nimbox, body: untyped) =
   nb.shutdown()
   body
   nb = newNb()
-  
-template c8*(color:int): int =
+
+template c8*(color: int): int =
   ## Convert this color (`ck8`) into
   ## an int with regards to the current color mode
   if colors256Mode():
@@ -30,7 +30,7 @@ template c8*(color:int): int =
   else:
     color
 
-template c8*(color:Color): int =
+template c8*(color: Color): int =
   ## Convert this color enum into an int
   ## with regards to the current color mode
   c8(ord(color))

@@ -1,4 +1,5 @@
-import os, osproc, sets, nimbox, parseopt, sequtils, algorithm, strutils, options, re
+import os, osproc, sets, nimbox, parseopt, sequtils, algorithm, strutils,
+    options, re
 
 import lscolors
 
@@ -20,15 +21,16 @@ proc safeSetCurDir(s: var State, path: string) =
 proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
   let
     notHidden = showHidden or not isHidden(entry.path)
-    matchesRe = if regex.isSome: extractFilename(entry.path).contains(regex.get) else: true
+    matchesRe = if regex.isSome: extractFilename(entry.path).contains(
+        regex.get) else: true
   matchesRe and notHidden
 
 proc refresh(s: var State) =
   let regex = case s.tabStateInfo.state
-              of TsNormal: none(Regex)
-              of TsSearch, TsSearchResults:
-                let compiled = re(s.tabStateInfo.query, flags = {reStudy, reIgnoreCase})
-                some(compiled)
+    of TsNormal: none(Regex)
+    of TsSearch, TsSearchResults:
+      let compiled = re(s.tabStateInfo.query, flags = {reStudy, reIgnoreCase})
+      some(compiled)
 
   s.visibleEntries = @[]
 
@@ -54,7 +56,7 @@ proc rescan(s: var State, lsc: LsColors) =
     s.error = ErrCannotShow
 
   s.refresh()
-  
+
 proc resetTab(s: var State) =
   s.tabStateInfo = TabStateInfo(state: TsNormal)
   s.currentIndex = 0
@@ -126,7 +128,8 @@ proc mainLoop(nb: var Nimbox) =
           else:
             s.tabStateInfo.query.setLen(s.tabStateInfo.query.high)
         of Symbol.Enter:
-          s.tabStateInfo = TabStateInfo(state: TsSearchResults, query: s.tabStateInfo.query)
+          s.tabStateInfo = TabStateInfo(state: TsSearchResults,
+              query: s.tabStateInfo.query)
         else:
           s.tabStateInfo.query.add(event.ch)
 
