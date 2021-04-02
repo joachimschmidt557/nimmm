@@ -1,6 +1,5 @@
-import times, sets, os, strformat, nimbox, strutils, sequtils, options
+import times, sets, os, strformat, nimbox, strutils, options
 
-import lscolors
 import lscolors/style
 
 import core, nimboxext
@@ -212,4 +211,3 @@ proc redraw*(s: State, nb: var Nimbox) =
       drawInputFooter("search:", s.tabStateInfo.query, nb)
 
   nb.present()
-

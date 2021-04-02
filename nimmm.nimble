@@ -10,7 +10,7 @@ bin           = @["nimmm"]
 
 # Dependencies
 
-requires "nim >= 0.19.9"
+requires "nim >= 1.4.4"
 requires "noise >= 0.1.3"
 requires "nimbox >= 0.1.0"
 requires "lscolors >= 0.3.3"

@@ -1,4 +1,4 @@
-import os, re, algorithm, strutils
+import os, algorithm, strutils
 
 import lscolors
 

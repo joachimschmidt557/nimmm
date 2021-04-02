@@ -1,4 +1,4 @@
-import tables, options, strutils, os
+import tables, strutils, os
 
 import nimbox
 

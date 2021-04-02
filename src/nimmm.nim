@@ -1,4 +1,4 @@
-import os, osproc, sets, nimbox, parseopt, sequtils, algorithm, strutils,
+import os, sets, nimbox, parseopt, sequtils, algorithm, strutils,
     options, re
 
 import lscolors
@@ -13,7 +13,7 @@ proc getIndexOfItem(s: State, name: string): int =
 
 proc safeSetCurDir(s: var State, path: string) =
   var safeDir = path
-  while not existsDir(safeDir):
+  while not dirExists(safeDir):
     safeDir = safeDir.parentDir
   setCurrentDir(safeDir)
   s.tabs[s.currentTab].cd = getCurrentDir()
