@@ -4,8 +4,8 @@ let
   noise = pkgs.fetchFromGitHub {
     owner = "jangko";
     repo = "nim-noise";
-    rev = "db1e86e312413e4348fa82c02340784316a89cc1";
-    sha256 = "0n9l2dww5smrsl1xfqxjnxz3f1srb72lc1wl3pdvs6xfyf44qzlh";
+    rev = "v0.1.14";
+    sha256 = "0wndiphznfyb1pac6zysi3bqljwlfwj6ziarcwnpf00sw2zni449";
   };
 
   nimbox = pkgs.fetchFromGitHub {
