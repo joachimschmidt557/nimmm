@@ -235,7 +235,8 @@ proc mainLoop(nb: var Nimbox) =
         s.rescan(lsc)
       of AcRename:
         withoutNimbox(nb):
-          rename(s.currentEntry.relative, askString("rename to: "))
+          let relativePath = extractFilename(s.currentEntry.path)
+          rename(relativePath, askString("rename to: "))
         s.rescan(lsc)
       of AcCopySelected:
         withoutNimbox(nb):

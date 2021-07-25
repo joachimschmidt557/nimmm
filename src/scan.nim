@@ -12,7 +12,6 @@ proc scan*(lsc: LsColors): tuple[entries: seq[DirEntry], error: bool] =
     try:
       entries.add(DirEntry(path: path,
                            info: getFileInfo(path),
-                           relative: extractFilename(path),
                            style: lsc.styleForPath(path)))
     except:
       error = true

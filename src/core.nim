@@ -24,7 +24,6 @@ type
   DirEntry* = object
     ## Represents an entry
     path*: string
-    relative*: string
     info*: FileInfo
     style*: Style
 

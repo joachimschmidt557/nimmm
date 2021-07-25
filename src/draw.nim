@@ -54,10 +54,8 @@ proc getBottomIndex(lenIndexes: int, topIndex: int, nb: Nimbox): int =
     result = min(lenIndexes - 1, topIndex + entriesHeight - 1)
 
 proc formatPath(path: string, length: int): string =
-  if path.len <= length:
-    result = path
-  else:
-    result = path
+  result = path
+  if path.len > length:
     result.setLen(length)
 
 proc lsColorToNimboxColor(c: style.Color): nimbox.Color =
@@ -114,13 +112,14 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
     isDir = entry.info.kind == pcDir or
             entry.info.kind == pcLinkToDir
     pathWidth = nb.width() - paddingLeft
+    relativePath = extractFilename(entry.path)
     line = (if highlight: " -> " else: "    ") &
       (if selected: "+ " else: "  ") &
       (entry.info.lastWriteTime.format("yyyy-MM-dd HH:mm")) &
       " " &
       (if isDir: "       /" else: sizeToString(entry.info.size)) &
       " " &
-      entry.relative.formatPath(pathWidth)
+      relativePath
   if getFgColors256(entry).isSome:
     let
       fg = if highlight: fgBlack() else: getFgColors256(entry).get
