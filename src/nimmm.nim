@@ -106,7 +106,7 @@ proc right(s: var State, lsc: LsColors) =
     elif s.currentEntry.info.kind == pcFile:
       openFile(s.currentEntry.path)
 
-proc mainLoop(nb: var Nimbox) =
+proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
   let
     lsc = parseLsColorsEnv()
     keymap = keyMapFromEnv()
@@ -150,7 +150,7 @@ proc mainLoop(nb: var Nimbox) =
         break
       of AcShell:
         let pwdBackup = getCurrentDir()
-        withoutNimbox(nb):
+        withoutNimbox(nb, enable256Colors):
           spawnShell()
         s.safeSetCurDir(pwdBackup)
         s.rescan(lsc)
@@ -217,42 +217,42 @@ proc mainLoop(nb: var Nimbox) =
       of AcEdit:
         if not s.empty:
           if s.currentEntry.info.kind == pcFile:
-            withoutNimbox(nb):
+            withoutNimbox(nb, enable256Colors):
               editFile(s.currentEntry.path)
             s.rescan(lsc)
       of AcPager:
         if not s.empty:
           if s.currentEntry.info.kind == pcFile:
-            withoutNimbox(nb):
+            withoutNimbox(nb, enable256Colors):
               viewFile(s.currentEntry.path)
       of AcNewFile:
-        withoutNimbox(nb):
+        withoutNimbox(nb, enable256Colors):
           newFile(askString("new file: "))
         s.rescan(lsc)
       of AcNewDir:
-        withoutNimbox(nb):
+        withoutNimbox(nb, enable256Colors):
           newDir(askString("new directory: "))
         s.rescan(lsc)
       of AcRename:
-        withoutNimbox(nb):
+        withoutNimbox(nb, enable256Colors):
           let relativePath = extractFilename(s.currentEntry.path)
           rename(relativePath, askString("rename to: "))
         s.rescan(lsc)
       of AcCopySelected:
-        withoutNimbox(nb):
+        withoutNimbox(nb, enable256Colors):
           copyEntries(s.selected)
         s.selected.clear()
         s.rescan(lsc)
       of AcMoveSelected:
         let pwdBackup = getCurrentDir()
-        withoutNimbox(nb):
+        withoutNimbox(nb, enable256Colors):
           moveEntries(s.selected)
         s.selected.clear()
         s.safeSetCurDir(pwdBackup)
         s.rescan(lsc)
       of AcDeleteSelected:
         let pwdBackup = getCurrentDir()
-        withoutNimbox(nb):
+        withoutNimbox(nb, enable256Colors):
           deleteEntries(s.selected, askYorN("use force? [y/n]: "))
         s.selected.clear()
         s.safeSetCurDir(pwdBackup)
@@ -273,6 +273,7 @@ when isMainModule:
         setCurrentDir(p.key)
       else: continue
 
-  var nb = newNb()
+  let enable256Colors = colors256Mode()
+  var nb = newNb(enable256Colors)
   addQuitProc(proc () {.noconv.} = nb.shutdown())
-  mainLoop(nb)
+  mainLoop(nb, enable256Colors)
