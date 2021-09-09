@@ -201,12 +201,12 @@ proc redraw*(s: State, nb: var Nimbox) =
                 nb)
 
   if nb.height() > 4:
-    case s.tabStateInfo.state
-    of TsNormal, TsSearchResults:
+    case s.mode:
+    of MdNormal:
       drawFooter(s.currentIndex, s.visibleEntries.len, s.selected.len,
-                 s.showHidden, s.tabStateInfo.state == TsSearchResults,
+                 s.showHidden, s.currentSearchQuery != "",
                  errMsg, nb)
-    of TsSearch:
-      drawInputFooter("search:", s.tabStateInfo.query, nb)
+    of MdSearch:
+      drawInputFooter("search:", s.currentSearchQuery, nb)
 
   nb.present()

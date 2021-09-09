@@ -25,18 +25,18 @@ proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
         regex.get) else: true
   matchesRe and notHidden
 
-proc compileRegex(tabStateInfo: TabStateInfo): Option[Regex] =
-  case tabStateInfo.state
-    of TsNormal: none(Regex)
-    of TsSearch, TsSearchResults:
-      try:
-        let compiled = re(tabStateInfo.query, flags = {reStudy, reIgnoreCase})
-        some(compiled)
-      except RegexError:
-        none(Regex)
+proc compileRegex(searchQuery: string): Option[Regex] =
+  if searchQuery != "":
+    try:
+      let compiled = re(searchQuery, flags = {reStudy, reIgnoreCase})
+      some(compiled)
+    except RegexError:
+      none(Regex)
+  else:
+    none(Regex)
 
 proc refresh(s: var State) =
-  let regex = compileRegex(s.tabStateInfo)
+  let regex = compileRegex(s.currentSearchQuery)
 
   s.visibleEntries = @[]
 
@@ -64,7 +64,8 @@ proc rescan(s: var State, lsc: LsColors) =
   s.refresh()
 
 proc resetTab(s: var State) =
-  s.tabStateInfo = TabStateInfo(state: TsNormal)
+  s.currentSearchQuery = ""
+  s.mode = MdNormal
   s.currentIndex = 0
 
 proc switchTab(s: var State, lsc: LsColors, i: int) =
@@ -120,30 +121,29 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
 
     let event = nb.pollEvent()
 
-    case s.tabStateInfo.state
+    case s.mode
     # Special keymap for incremental search (overrides custom keymaps)
-    of TsSearch:
+    of MdSearch:
       case event.kind
       of EventType.Key:
         case event.sym
         of Symbol.Escape:
           s.resetTab()
         of Symbol.Backspace:
-          if s.tabStateInfo.query.len == 0:
+          if s.currentSearchQuery.len == 0:
             s.resetTab()
           else:
-            s.tabStateInfo.query.setLen(s.tabStateInfo.query.high)
+            s.currentSearchQuery.setLen(s.currentSearchQuery.high)
         of Symbol.Enter:
-          s.tabStateInfo = TabStateInfo(state: TsSearchResults,
-              query: s.tabStateInfo.query)
+          s.mode = MdNormal
         else:
-          s.tabStateInfo.query.add(event.ch)
+          s.currentSearchQuery.add(event.ch)
 
         s.refresh()
       of EventType.Mouse, EventType.Resize, EventType.None:
         discard
     # Normal keymap
-    of TsNormal, TsSearchResults:
+    of MdNormal:
       case nimboxEventToAction(event, keymap):
       of AcNone: discard
       of AcQuit:
@@ -188,7 +188,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
       of AcNewTab:
         s.tabs.add(Tab(cd: getCurrentDir(),
                        index: s.currentIndex,
-                       stateInfo: TabStateInfo(state: TsNormal)))
+                       searchQuery: ""))
         s.switchTab(lsc, s.tabs.high)
       of AcCloseTab:
         if s.tabs.len > 1:
@@ -258,7 +258,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         s.safeSetCurDir(pwdBackup)
         s.rescan(lsc)
       of AcSearch:
-        s.tabStateInfo = TabStateInfo(state: TsSearch, query: "")
+        s.currentSearchQuery = ""
+        s.mode = MdSearch
       of AcEndSearch:
         s.resetTab()
         s.refresh()

@@ -3,23 +3,16 @@ import os, sets
 import lscolors/style
 
 type
-  TabState* = enum
-    ## The states a specific tab can be in
-    TsNormal,
-    TsSearch,
-    TsSearchResults,
-
-  TabStateInfo* = object
-    case state*: TabState
-    of TsNormal: discard
-    of TsSearch, TsSearchResults:
-      query*: string
+  Mode* = enum
+    ## The input modes nimmm can be in
+    MdNormal,
+    MdSearch,
 
   Tab* = object
     ## Represents a tab
     cd*: string
     index*: int
-    stateInfo*: TabStateInfo
+    searchQuery*: string
 
   DirEntry* = object
     ## Represents an entry
@@ -38,6 +31,7 @@ type
     error*: ErrorKind
     tabs*: seq[Tab]
     currentTab*: int
+    mode*: Mode
     showHidden*: bool
     entries*: seq[DirEntry]
     visibleEntriesMask*: seq[bool]
@@ -48,9 +42,10 @@ proc initState*(): State =
   ## Initializes the default startup state
   State(error: ErrNone,
         tabs: @[Tab(cd: getCurrentDir(), index: 0,
-                    stateInfo: TabStateInfo(state: TsNormal))],
+                    searchQuery: "")],
         currentTab: 0,
         showHidden: false,
+        mode: MdNormal,
         entries: @[],
         visibleEntriesMask: @[],
         visibleEntries: @[],
@@ -66,6 +61,14 @@ template `currentIndex=`*(s: var State, i: int) =
   ## the current tab
   s.tabs[s.currentTab].index = i
 
+template currentSearchQuery*(s: State): string =
+  ## Gets the current search query
+  s.tabs[s.currentTab].searchQuery
+
+template `currentSearchQuery=`*(s: State, query: string) =
+  ## Sets the current search query
+  s.tabs[s.currentTab].searchQuery = query
+
 template currentEntry*(s: State): DirEntry =
   ## Gets the current entry
   s.entries[s.visibleEntries[s.currentIndex]]
@@ -73,11 +76,3 @@ template currentEntry*(s: State): DirEntry =
 template empty*(s: State): bool =
   ## Returns whether there are no entries
   s.visibleEntries.len < 1
-
-template tabStateInfo*(s: State): TabStateInfo =
-  ## Gets the state info for the current tab
-  s.tabs[s.currentTab].stateInfo
-
-template `tabStateInfo=`*(s: var State, info: TabStateInfo) =
-  ## Sets the state info for the current tab
-  s.tabs[s.currentTab].stateInfo = info
