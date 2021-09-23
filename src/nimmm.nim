@@ -136,8 +136,10 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
             s.currentSearchQuery.setLen(s.currentSearchQuery.high)
         of Symbol.Enter:
           s.mode = MdNormal
-        else:
+        of Symbol.Character:
           s.currentSearchQuery.add(event.ch)
+        else:
+          discard
 
         s.refresh()
       of EventType.Mouse, EventType.Resize, EventType.None:
