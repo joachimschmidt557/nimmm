@@ -1,6 +1,8 @@
 {
   description = "Terminal file manager written in nim";
 
+  inputs.flake-utils.url = "github:numtide/flake-utils";
+
   inputs.noise = {
     url = "github:jangko/nim-noise/v0.1.14";
     flake = false;
@@ -16,34 +18,38 @@
     flake = false;
   };
 
-  outputs = { self, nixpkgs, noise, nimbox, lscolors }: {
+  outputs = { self, nixpkgs, flake-utils, noise, nimbox, lscolors }:
+    (flake-utils.lib.eachDefaultSystem
+      (system:
 
-    packages.x86_64-linux.nimmm =
-      with import nixpkgs { system = "x86_64-linux"; };
-      stdenv.mkDerivation {
-        pname = "nimmm";
-        version = "master";
+        let pkgs = nixpkgs.legacyPackages.${system}; in
+        rec {
 
-        src = self;
+          packages.nimmm =
+            pkgs.stdenv.mkDerivation {
+              pname = "nimmm";
+              version = "master";
 
-        nativeBuildInputs = [ nim ];
-        buildInputs = [ termbox pcre ];
+              src = self;
 
-        NIX_LDFLAGS = "-lpcre";
+              nativeBuildInputs = with pkgs; [ nim ];
+              buildInputs = with pkgs; [ termbox pcre ];
 
-        buildPhase = ''
-          export HOME=$TMPDIR;
-          nim -p:${noise} -p:${nimbox} -p:${lscolors}/src c -d:release src/nimmm.nim
-        '';
+              NIX_LDFLAGS = "-lpcre";
 
-        installPhase = ''
-          install -Dt $out/bin src/nimmm
-        '';
-      };
+              buildPhase = ''
+                export HOME=$TMPDIR;
+                nim -p:${noise} -p:${nimbox} -p:${lscolors}/src c -d:release src/nimmm.nim
+              '';
 
-    defaultPackage.x86_64-linux = self.packages.x86_64-linux.nimmm;
+              installPhase = ''
+                install -Dt $out/bin src/nimmm
+              '';
+            };
 
-    hydraJobs.nimmm.x86_64-linux = self.packages.x86_64-linux.nimmm;
+          defaultPackage = packages.nimmm;
 
-  };
+        })) // {
+      hydraJobs.nimmm.x86_64-linux = self.packages.x86_64-linux.nimmm;
+    };
 }
