@@ -1,6 +1,6 @@
 # nimmm
 
-[![Build Status](https://travis-ci.org/joachimschmidt557/nimmm.svg?branch=master)](https://travis-ci.org/joachimschmidt557/nimmm)
+[![Build](https://github.com/joachimschmidt557/nimmm/actions/workflows/build.yml/badge.svg)](https://github.com/joachimschmidt557/nimmm/actions/workflows/build.yml)
 ![GitHub](https://img.shields.io/github/license/joachimschmidt557/nimmm.svg)
 
 A terminal file manager written in [nim](https://nim-lang.org/)
