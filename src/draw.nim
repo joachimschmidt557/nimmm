@@ -191,7 +191,14 @@ proc redraw*(s: State, nb: var Nimbox) =
     drawHeader(s.tabs.len, s.currentTab, nb)
 
   if s.visibleEntries.len < 1:
-    nb.print(0, 2, "Empty directory", c8(clrYellow), c8(clrBlack))
+    let message = case s.mode:
+      of MdNormal:
+        if s.currentSearchQuery == "":
+          "Empty directory"
+        else:
+          "No matching results"
+      of MdSearch: "No matching results"
+    nb.print(0, 2, message, c8(clrYellow), c8(clrBlack))
   for i in topIndex .. bottomIndex:
     let entry = s.entries[s.visibleEntries[i]]
     drawDirEntry(entry,
