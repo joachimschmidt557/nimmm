@@ -11,7 +11,7 @@ proc scan*(lsc: LsColors): tuple[entries: seq[DirEntry], error: bool] =
   for kind, path in walkDir(getCurrentDir()):
     try:
       entries.add(DirEntry(path: path,
-                           info: getFileInfo(path),
+                           info: getFileInfo(path, false),
                            style: lsc.styleForPath(path)))
     except:
       error = true
