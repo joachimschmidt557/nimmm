@@ -1,4 +1,6 @@
 import tables, strutils, os
+import std/parsecfg
+import std/[strutils, streams]
 
 import nimbox
 
@@ -100,26 +102,39 @@ let
   defaultKeymap* = Keymap(chars: defaultChars, symbols: defaultSymbols,
       mouse: defaultMouse)
 
-proc keymapFromEnv*(): Keymap =
-  ## Loads the keymap from environment variables
+proc keymapFromConfig*(): Keymap =
+  ## Loads the keymap from configuration file
   result = defaultKeymap
-  for key, value in envPairs():
-    let action = actionNames.getOrDefault(value, AcNone)
-    if key.startsWith("NIMMM_KEY_"):
-      var char = key
-      char.removePrefix("NIMMM_KEY_")
-      if char.len == 1:
-        result.chars[char[0]] = action
-    elif key.startsWith("NIMMM_SYMBOL_"):
-      var name = key
-      name.removePrefix("NIMMM_SYMBOL_")
-      if name in symbolNames:
-        result.symbols[symbolNames[name]] = action
-    elif key.startsWith("NIMMM_MOUSE_"):
-      var name = key
-      name.removePrefix("NIMMM_MOUSE_")
-      if name in mouseNames:
-        result.mouse[mouseNames[name]] = action
+
+  let configFile = getConfigDir() / "nimmm.conf"
+  if not fileExists(configFile): return
+  var f = newFileStream(configFile, fmRead)
+  if f == nil: return
+
+  var
+    p: CfgParser
+    section = ""
+  open(p, f, configFile)
+  while true:
+    var e = next(p)
+    case e.kind
+    of cfgEof: break
+    of cfgSectionStart:
+      section = e.section
+    of cfgKeyValuePair:
+      if section == "Keybindings":
+        let action = actionNames.getOrDefault(e.value, AcNone)
+        if e.key.len == 1:
+          result.chars[e.key[0]] = action
+        elif e.key in mouseNames:
+          result.mouse[mouseNames[e.key]] = action
+        elif e.key in symbolNames:
+          result.symbols[symbolNames[e.key]] = action
+    of cfgOption:
+      discard
+    of cfgError:
+      discard
+  close(p)
 
 proc nimboxEventToAction*(event: nimbox.Event, keymap: Keymap): Action =
   ## Decides whether an action is associated with this event and in that case,

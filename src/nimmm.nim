@@ -110,7 +110,7 @@ proc right(s: var State, lsc: LsColors) =
 proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
   let
     lsc = parseLsColorsEnv()
-    keymap = keyMapFromEnv()
+    keymap = keyMapFromConfig()
   var
     s = initState()
 
