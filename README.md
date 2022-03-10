@@ -4,7 +4,7 @@
 ![GitHub](https://img.shields.io/github/license/joachimschmidt557/nimmm.svg)
 
 A terminal file manager written in [nim](https://nim-lang.org/)
-inspired by the awesome [nnn](https://github.com/jarun/nnn). 
+inspired by the awesome [nnn](https://github.com/jarun/nnn).
 
 [![asciicast](https://asciinema.org/a/aEEz3wkiAvjx2vlBZbQqxOga3.svg)](https://asciinema.org/a/aEEz3wkiAvjx2vlBZbQqxOga3)
 
@@ -23,12 +23,10 @@ driver for me.
 
 ## Usage
 
-### Command-line options
-
-There are no command line options! I designed `nimmm` to be purely interactive
-and handle the configuration with environment variables just like `nnn` does.
-
 ### Configuration
+
+Some functionality of `nimmm` is controlled via environment variables
+similar to other programs:
 
 | Environment variable | Setting |
 | --- | --- |
@@ -36,9 +34,10 @@ and handle the configuration with environment variables just like `nnn` does.
 | `PAGER` | file viewer |
 | `NIMMM_OPEN` | file opener |
 | `NIMMM_256` | enable 256 color mode |
-| `NIMM_KEY_x` | customize keymap for key `x` |
-| `NIMM_SYMBOL_x` | customize keymap for special symbol `x` |
-| `NIMM_MOUSE_x` | customize action for mouse event `x` |
+
+Other configuration such as keybindings are configured in
+`$XDG_CONFIG_HOME/nimmm.conf` where `$XDG_CONFIG_HOME` defaults to
+`~/.config` if not set.
 
 ### Default keymap
 
@@ -71,15 +70,21 @@ and handle the configuration with environment variables just like `nnn` does.
 | <kbd>w</kbd> | `close-tab` | close tab |
 | <kbd>1</kbd>..<kbd>0</kbd> | `tab-x` | go to tab 1..10 |
 
-If you prefer more Emacs-oriented movement keybindings, you can do this for
-example:
+If you prefer more Emacs-oriented movement keybindings, you can add
+this to your configuration file:
 
-``` shell
-$ for x in h j k l; do export "NIMMM_KEY_$x"="none"; done
-$ export "NIMMM_KEY_n"="down"
-$ export "NIMMM_KEY_p"="up"
-$ export "NIMMM_KEY_f"="right"
-$ export "NIMMM_KEY_b"="left"
+``` toml
+[Keybindings]
+
+h=none
+j=none
+k=none
+l=none
+
+n=down
+p=up
+f=right
+b=left
 ```
 
 ## ToDo
@@ -131,3 +136,7 @@ $ nimble install nimmm
 ```shell
 $ nix-env -i nimmm
 ```
+
+## License
+
+`nimmm` is licensed under the GNU General Public License v3.0 only.
