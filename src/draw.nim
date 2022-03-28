@@ -179,6 +179,7 @@ proc errMsg(err: ErrorKind): string =
   of ErrNone: ""
   of ErrCannotCd: "Cannot open directory"
   of ErrCannotShow: "Some entries couldn't be displayed"
+  of ErrCannotOpen: "Cannot open file"
 
 proc redraw*(s: State, nb: var Nimbox) =
   let

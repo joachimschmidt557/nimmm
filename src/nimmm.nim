@@ -105,7 +105,10 @@ proc right(s: var State, lsc: LsColors) =
         s.error = ErrCannotCd
         s.safeSetCurDir(prev)
     elif s.currentEntry.info.kind == pcFile:
-      openFile(s.currentEntry.path)
+      try:
+        openFile(s.currentEntry.path)
+      except:
+        s.error = ErrCannotOpen
 
 proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
   let

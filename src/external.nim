@@ -5,7 +5,7 @@ proc spawnShell*() =
     fallback = "/bin/sh"
   stdout.writeLine("""
 
- /\^/\^/\^/\ 
+ /\^/\^/\^/\
 #############
 ### nimmm ###
 #############

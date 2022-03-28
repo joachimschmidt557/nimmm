@@ -25,6 +25,7 @@ type
     ErrNone,
     ErrCannotCd,
     ErrCannotShow,
+    ErrCannotOpen,
 
   State* = object
     ## Represents a possible state of nimmm
