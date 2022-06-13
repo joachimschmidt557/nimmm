@@ -6,7 +6,16 @@ type
   Mode* = enum
     ## The input modes nimmm can be in
     MdNormal,
+    MdInput,
     MdSearch,
+
+  ModeInfo* = object
+    case mode*: Mode
+    of MdNormal, MdSearch: discard
+    of MdInput:
+      prompt*: string
+      input*: string
+      callback*: proc (input: string)
 
   Tab* = object
     ## Represents a tab
@@ -32,7 +41,7 @@ type
     error*: ErrorKind
     tabs*: seq[Tab]
     currentTab*: int
-    mode*: Mode
+    modeInfo*: ModeInfo
     showHidden*: bool
     entries*: seq[DirEntry]
     visibleEntriesMask*: seq[bool]
@@ -46,7 +55,7 @@ proc initState*(): State =
                     searchQuery: "")],
         currentTab: 0,
         showHidden: false,
-        mode: MdNormal,
+        modeInfo: ModeInfo(mode: MdNormal),
         entries: @[],
         visibleEntriesMask: @[],
         visibleEntries: @[],

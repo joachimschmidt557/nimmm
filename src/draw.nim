@@ -192,13 +192,11 @@ proc redraw*(s: State, nb: var Nimbox) =
     drawHeader(s.tabs.len, s.currentTab, nb)
 
   if s.visibleEntries.len < 1:
-    let message = case s.mode:
-      of MdNormal:
-        if s.currentSearchQuery == "":
-          "Empty directory"
-        else:
-          "No matching results"
-      of MdSearch: "No matching results"
+    let message =
+      if s.currentSearchQuery == "":
+        "Empty directory"
+      else:
+        "No matching results"
     nb.print(0, 2, message, c8(clrYellow), c8(clrBlack))
   for i in topIndex .. bottomIndex:
     let entry = s.entries[s.visibleEntries[i]]
@@ -209,12 +207,14 @@ proc redraw*(s: State, nb: var Nimbox) =
                 nb)
 
   if nb.height() > 4:
-    case s.mode:
+    case s.modeInfo.mode:
     of MdNormal:
       drawFooter(s.currentIndex, s.visibleEntries.len, s.selected.len,
                  s.showHidden, s.currentSearchQuery != "",
                  errMsg, nb)
     of MdSearch:
       drawInputFooter("search:", s.currentSearchQuery, nb)
+    of MdInput:
+      drawInputFooter(s.modeInfo.prompt, s.modeInfo.input, nb)
 
   nb.present()

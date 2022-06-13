@@ -1,4 +1,4 @@
-import noise
+import terminal
 
 proc askYorN*(question: string): bool =
   stdout.write(question)
@@ -10,12 +10,3 @@ proc askYorN*(question: string): bool =
         return false
       else:
         continue
-
-proc askString*(question: string, preload = ""): string =
-  var noise = Noise.init()
-  noise.preloadBuffer(preload)
-  noise.setPrompt(question)
-  let ok = noise.readLine()
-
-  if not ok: return ""
-  return noise.getLine

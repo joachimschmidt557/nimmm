@@ -65,7 +65,7 @@ proc rescan(s: var State, lsc: LsColors) =
 
 proc resetTab(s: var State) =
   s.currentSearchQuery = ""
-  s.mode = MdNormal
+  s.modeInfo = ModeInfo(mode: MdNormal)
   s.currentIndex = 0
 
 proc switchTab(s: var State, lsc: LsColors, i: int) =
@@ -124,8 +124,34 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
 
     let event = nb.pollEvent()
 
-    case s.mode
+    case s.modeInfo.mode
     # Special keymap for incremental search (overrides custom keymaps)
+    of MdInput:
+      case event.kind
+      of EventType.Key:
+        case event.sym
+        of Symbol.Escape:
+          s.resetTab()
+        of Symbol.Backspace:
+          if s.modeInfo.input.len == 0:
+            s.resetTab()
+          else:
+            s.modeInfo.input.setLen(s.modeInfo.input.high)
+        of Symbol.Enter:
+          withoutNimbox(nb, enable256Colors):
+            s.modeInfo.callback(s.modeInfo.input)
+          s.rescan(lsc)
+          s.resetTab()
+        of Symbol.Space:
+          s.modeInfo.input.add(" ")
+        of Symbol.Character:
+          s.modeInfo.input.add(event.ch)
+        else:
+          discard
+
+        s.refresh()
+      of EventType.Mouse, EventType.Resize, EventType.None:
+        discard
     of MdSearch:
       case event.kind
       of EventType.Key:
@@ -138,7 +164,9 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           else:
             s.currentSearchQuery.setLen(s.currentSearchQuery.high)
         of Symbol.Enter:
-          s.mode = MdNormal
+          s.modeInfo = ModeInfo(mode: MdNormal)
+        of Symbol.Space:
+          s.currentSearchQuery.add(" ")
         of Symbol.Character:
           s.currentSearchQuery.add(event.ch)
         else:
@@ -154,10 +182,10 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
       of AcQuit:
         break
       of AcShell:
-        let pwdBackup = getCurrentDir()
+        let cwdBackup = getCurrentDir()
         withoutNimbox(nb, enable256Colors):
           spawnShell()
-        s.safeSetCurDir(pwdBackup)
+        s.safeSetCurDir(cwdBackup)
         s.rescan(lsc)
       of AcToggleHidden:
         s.showHidden = not s.showHidden
@@ -231,18 +259,22 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
             withoutNimbox(nb, enable256Colors):
               viewFile(s.currentEntry.path)
       of AcNewFile:
-        withoutNimbox(nb, enable256Colors):
-          newFile(askString("new file: "))
-        s.rescan(lsc)
+        s.modeInfo = ModeInfo(mode: MdInput,
+                              prompt: "new file:",
+                              input: "",
+                              callback: newFile)
       of AcNewDir:
-        withoutNimbox(nb, enable256Colors):
-          newDir(askString("new directory: "))
-        s.rescan(lsc)
+        s.modeInfo = ModeInfo(mode: MdInput,
+                              prompt: "new directory:",
+                              input: "",
+                              callback: newDir)
       of AcRename:
-        withoutNimbox(nb, enable256Colors):
-          let relativePath = extractFilename(s.currentEntry.path)
-          rename(relativePath, askString("rename to: "))
-        s.rescan(lsc)
+        let relativePath = extractFilename(s.currentEntry.path)
+        s.modeInfo = ModeInfo(mode: MdInput,
+                              prompt: "rename to:",
+                              input: relativePath,
+                              callback: proc (input: string) =
+          rename(relativePath, input))
       of AcCopySelected:
         withoutNimbox(nb, enable256Colors):
           copyEntries(s.selected)
@@ -264,9 +296,9 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         s.rescan(lsc)
       of AcSearch:
         s.currentSearchQuery = ""
-        s.mode = MdSearch
+        s.modeInfo = ModeInfo(mode: MdSearch)
       of AcEndSearch:
-        s.resetTab()
+        s.currentSearchQuery = ""
         s.refresh()
 
 when isMainModule:
