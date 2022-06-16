@@ -1,4 +1,4 @@
-import os, sets
+import std/[os, sets]
 
 import lscolors/style
 

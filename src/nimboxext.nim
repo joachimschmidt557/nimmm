@@ -2,7 +2,8 @@
 ##
 ## These functions help in toggling the 256-colors option
 
-import os
+import std/os
+
 import nimbox
 
 template newNb*(enable256Colors: bool): Nimbox =

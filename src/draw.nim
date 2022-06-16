@@ -1,5 +1,6 @@
-import times, sets, os, strformat, nimbox, strutils, options
+import std/[times, sets, os, strformat, strutils, options]
 
+import nimbox
 import lscolors/style
 
 import core, nimboxext

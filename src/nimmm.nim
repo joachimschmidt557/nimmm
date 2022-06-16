@@ -1,6 +1,7 @@
-import os, sets, nimbox, parseopt, sequtils, algorithm, strutils,
-    options, re
+import std/[os, sets, parseopt, sequtils, algorithm, strutils,
+    options, re]
 
+import nimbox
 import lscolors
 
 import core, scan, draw, external, nimboxext, keymap, interactions
@@ -125,7 +126,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
     let event = nb.pollEvent()
 
     case s.modeInfo.mode
-    # Special keymap for incremental search (overrides custom keymaps)
+    # Input mode: Ignore keymap
     of MdInput:
       case event.kind
       of EventType.Key:
@@ -133,9 +134,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         of Symbol.Escape:
           s.resetTab()
         of Symbol.Backspace:
-          if s.modeInfo.input.len == 0:
-            s.resetTab()
-          else:
+          if s.modeInfo.input.len > 0:
             s.modeInfo.input.setLen(s.modeInfo.input.high)
         of Symbol.Enter:
           withoutNimbox(nb, enable256Colors):
@@ -152,6 +151,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         s.refresh()
       of EventType.Mouse, EventType.Resize, EventType.None:
         discard
+    # Incremental search mode: Ignore keymap
     of MdSearch:
       case event.kind
       of EventType.Key:

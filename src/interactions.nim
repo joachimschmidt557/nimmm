@@ -1,4 +1,4 @@
-import terminal
+import std/terminal
 
 proc askYorN*(question: string): bool =
   stdout.write(question)

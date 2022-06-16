@@ -1,4 +1,4 @@
-import os, osproc, sets, sequtils
+import std/[os, osproc, sets, sequtils]
 
 proc spawnShell*() =
   const

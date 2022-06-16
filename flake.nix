@@ -4,11 +4,6 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  inputs.noise = {
-    url = "github:jangko/nim-noise/v0.1.14";
-    flake = false;
-  };
-
   inputs.nimbox = {
     url = "github:dom96/nimbox";
     flake = false;
@@ -40,7 +35,7 @@
 
               buildPhase = ''
                 export HOME=$TMPDIR;
-                nim -p:${noise} -p:${nimbox} -p:${lscolors}/src c -d:release src/nimmm.nim
+                nim -p:${nimbox} -p:${lscolors}/src c -d:release src/nimmm.nim
               '';
 
               installPhase = ''

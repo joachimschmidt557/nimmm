@@ -1,6 +1,4 @@
-import tables, strutils, os
-import std/parsecfg
-import std/[strutils, streams]
+import std/[strutils, streams, parsecfg, tables, strutils, os]
 
 import nimbox
 
