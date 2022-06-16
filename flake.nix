@@ -14,7 +14,7 @@
     flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-utils, noise, nimbox, lscolors }:
+  outputs = { self, nixpkgs, flake-utils, nimbox, lscolors }:
     (flake-utils.lib.eachDefaultSystem
       (system:
 

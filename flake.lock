@@ -64,30 +64,12 @@
         "type": "github"
       }
     },
-    "noise": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1600141522,
-        "narHash": "sha256-iZBov+AaAHctZ1nFbyR3lEuK14jaf8PUDcs7++GNzXI=",
-        "owner": "jangko",
-        "repo": "nim-noise",
-        "rev": "947f195c5796d3aca331de39d49dc073140748c1",
-        "type": "github"
-      },
-      "original": {
-        "owner": "jangko",
-        "ref": "v0.1.14",
-        "repo": "nim-noise",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
         "lscolors": "lscolors",
         "nimbox": "nimbox",
-        "nixpkgs": "nixpkgs",
-        "noise": "noise"
+        "nixpkgs": "nixpkgs"
       }
     }
   },
