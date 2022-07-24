@@ -1,5 +1,5 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-    options, re]
+            options, re, segfaults]
 
 import nimbox
 import lscolors
@@ -111,6 +111,22 @@ proc right(s: var State, lsc: LsColors) =
       except:
         s.error = ErrCannotOpen
 
+var inputThread: Thread[Nimbox]
+var chan: Channel[seq[nimbox.Event]]
+
+proc inputLoop(nb: Nimbox) =
+  while true:
+    let event = nb.pollEvent()
+    if event.kind != EventType.None:
+      var events = @[event]
+      while true:
+        let nextEvent = nb.peekEvent(0)
+        if nextEvent.kind == EventType.None:
+          break
+        else:
+          events.add(nextEvent)
+      chan.send(events)
+
 proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
   let
     lsc = parseLsColorsEnv()
@@ -120,186 +136,186 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
 
   s.rescan(lsc)
 
+  chan.open()
+  createThread(inputThread, inputLoop, nb)
+
   while true:
     redraw(s, nb)
 
-    let event = nb.pollEvent()
-
-    case s.modeInfo.mode
-    # Input mode: Ignore keymap
-    of MdInput:
-      case event.kind
-      of EventType.Key:
-        case event.sym
-        of Symbol.Escape:
-          s.resetTab()
-        of Symbol.Backspace:
-          if s.modeInfo.input.len > 0:
-            s.modeInfo.input.setLen(s.modeInfo.input.high)
-        of Symbol.Enter:
-          withoutNimbox(nb, enable256Colors):
-            s.modeInfo.callback(s.modeInfo.input)
-          s.rescan(lsc)
-          s.resetTab()
-        of Symbol.Space:
-          s.modeInfo.input.add(" ")
-        of Symbol.Character:
-          s.modeInfo.input.add(event.ch)
-        else:
-          discard
-
-        s.refresh()
-      of EventType.Mouse, EventType.Resize, EventType.None:
-        discard
-    # Incremental search mode: Ignore keymap
-    of MdSearch:
-      case event.kind
-      of EventType.Key:
-        case event.sym
-        of Symbol.Escape:
-          s.resetTab()
-        of Symbol.Backspace:
-          if s.currentSearchQuery.len == 0:
+    for event in chan.recv():
+      case s.modeInfo.mode
+      # Input mode: Ignore keymap
+      of MdInput:
+        case event.kind
+        of EventType.Key:
+          case event.sym
+          of Symbol.Escape:
             s.resetTab()
-          else:
-            s.currentSearchQuery.setLen(s.currentSearchQuery.high)
-        of Symbol.Enter:
-          s.modeInfo = ModeInfo(mode: MdNormal)
-        of Symbol.Space:
-          s.currentSearchQuery.add(" ")
-        of Symbol.Character:
-          s.currentSearchQuery.add(event.ch)
-        else:
-          discard
-
-        s.refresh()
-      of EventType.Mouse, EventType.Resize, EventType.None:
-        discard
-    # Normal keymap
-    of MdNormal:
-      case nimboxEventToAction(event, keymap):
-      of AcNone: discard
-      of AcQuit:
-        break
-      of AcShell:
-        let cwdBackup = getCurrentDir()
-        withoutNimbox(nb, enable256Colors):
-          spawnShell()
-        s.safeSetCurDir(cwdBackup)
-        s.rescan(lsc)
-      of AcToggleHidden:
-        s.showHidden = not s.showHidden
-        s.refresh()
-      of AcSelect:
-        if not s.empty:
-          if not s.selected.contains(s.currentEntry.path):
-            s.selected.incl(s.currentEntry.path)
-          else:
-            s.selected.excl(s.currentEntry.path)
-      of AcSelectAll:
-        for i in s.visibleEntries:
-          let entry = s.entries[i]
-          s.selected.incl(entry.path)
-      of AcClearSelection:
-        s.selected.clear()
-      of AcFirst:
-        s.currentIndex = 0
-      of AcLast:
-        s.currentIndex = s.visibleEntries.high
-      of AcDown:
-        s.down()
-      of AcUp:
-        s.up()
-      of AcLeft:
-        s.left(lsc)
-      of AcRight:
-        s.right(lsc)
-      of AcHomeDir:
-        s.safeSetCurDir(getHomeDir())
-        s.resetTab()
-        s.rescan(lsc)
-      of AcNewTab:
-        s.tabs.add(Tab(cd: getCurrentDir(),
-                       index: s.currentIndex,
-                       searchQuery: ""))
-        s.switchTab(lsc, s.tabs.high)
-      of AcCloseTab:
-        if s.tabs.len > 1:
-          s.tabs.del(s.currentTab)
-        s.switchTab(lsc, max(0, s.currentTab - 1))
-      of AcTab1:
-        s.switchTab(lsc, 0)
-      of AcTab2:
-        s.switchTab(lsc, 1)
-      of AcTab3:
-        s.switchTab(lsc, 2)
-      of AcTab4:
-        s.switchTab(lsc, 3)
-      of AcTab5:
-        s.switchTab(lsc, 4)
-      of AcTab6:
-        s.switchTab(lsc, 5)
-      of AcTab7:
-        s.switchTab(lsc, 6)
-      of AcTab8:
-        s.switchTab(lsc, 7)
-      of AcTab9:
-        s.switchTab(lsc, 8)
-      of AcTab10:
-        s.switchTab(lsc, 9)
-      of AcEdit:
-        if not s.empty:
-          if s.currentEntry.info.kind == pcFile:
+          of Symbol.Backspace:
+            if s.modeInfo.input.len > 0:
+              s.modeInfo.input.setLen(s.modeInfo.input.high)
+          of Symbol.Enter:
             withoutNimbox(nb, enable256Colors):
-              editFile(s.currentEntry.path)
+              s.modeInfo.callback(s.modeInfo.input)
             s.rescan(lsc)
-      of AcPager:
-        if not s.empty:
-          if s.currentEntry.info.kind == pcFile:
-            withoutNimbox(nb, enable256Colors):
-              viewFile(s.currentEntry.path)
-      of AcNewFile:
-        s.modeInfo = ModeInfo(mode: MdInput,
-                              prompt: "new file:",
-                              input: "",
-                              callback: newFile)
-      of AcNewDir:
-        s.modeInfo = ModeInfo(mode: MdInput,
-                              prompt: "new directory:",
-                              input: "",
-                              callback: newDir)
-      of AcRename:
-        let relativePath = extractFilename(s.currentEntry.path)
-        s.modeInfo = ModeInfo(mode: MdInput,
-                              prompt: "rename to:",
-                              input: relativePath,
-                              callback: proc (input: string) =
-          rename(relativePath, input))
-      of AcCopySelected:
-        withoutNimbox(nb, enable256Colors):
-          copyEntries(s.selected)
-        s.selected.clear()
-        s.rescan(lsc)
-      of AcMoveSelected:
-        let pwdBackup = getCurrentDir()
-        withoutNimbox(nb, enable256Colors):
-          moveEntries(s.selected)
-        s.selected.clear()
-        s.safeSetCurDir(pwdBackup)
-        s.rescan(lsc)
-      of AcDeleteSelected:
-        let pwdBackup = getCurrentDir()
-        withoutNimbox(nb, enable256Colors):
-          deleteEntries(s.selected, askYorN("use force? [y/n]: "))
-        s.selected.clear()
-        s.safeSetCurDir(pwdBackup)
-        s.rescan(lsc)
-      of AcSearch:
-        s.currentSearchQuery = ""
-        s.modeInfo = ModeInfo(mode: MdSearch)
-      of AcEndSearch:
-        s.currentSearchQuery = ""
-        s.refresh()
+            s.resetTab()
+          of Symbol.Space:
+            s.modeInfo.input.add(" ")
+          of Symbol.Character:
+            s.modeInfo.input.add(event.ch)
+          else:
+            discard
+        of EventType.Mouse, EventType.Resize, EventType.None:
+          discard
+      # Incremental search mode: Ignore keymap
+      of MdSearch:
+        case event.kind
+        of EventType.Key:
+          case event.sym
+          of Symbol.Escape:
+            s.resetTab()
+          of Symbol.Backspace:
+            if s.currentSearchQuery.len == 0:
+              s.resetTab()
+            else:
+              s.currentSearchQuery.setLen(s.currentSearchQuery.high)
+          of Symbol.Enter:
+            s.modeInfo = ModeInfo(mode: MdNormal)
+          of Symbol.Space:
+            s.currentSearchQuery.add(" ")
+          of Symbol.Character:
+            s.currentSearchQuery.add(event.ch)
+          else:
+            discard
+
+          s.refresh()
+        of EventType.Mouse, EventType.Resize, EventType.None:
+          discard
+      # Normal keymap
+      of MdNormal:
+        case nimboxEventToAction(event, keymap):
+        of AcNone: discard
+        of AcQuit:
+          return
+        of AcShell:
+          let cwdBackup = getCurrentDir()
+          withoutNimbox(nb, enable256Colors):
+            spawnShell()
+          s.safeSetCurDir(cwdBackup)
+          s.rescan(lsc)
+        of AcToggleHidden:
+          s.showHidden = not s.showHidden
+          s.refresh()
+        of AcSelect:
+          if not s.empty:
+            if not s.selected.contains(s.currentEntry.path):
+              s.selected.incl(s.currentEntry.path)
+            else:
+              s.selected.excl(s.currentEntry.path)
+        of AcSelectAll:
+          for i in s.visibleEntries:
+            let entry = s.entries[i]
+            s.selected.incl(entry.path)
+        of AcClearSelection:
+          s.selected.clear()
+        of AcFirst:
+          s.currentIndex = 0
+        of AcLast:
+          s.currentIndex = s.visibleEntries.high
+        of AcDown:
+          s.down()
+        of AcUp:
+          s.up()
+        of AcLeft:
+          s.left(lsc)
+        of AcRight:
+          s.right(lsc)
+        of AcHomeDir:
+          s.safeSetCurDir(getHomeDir())
+          s.resetTab()
+          s.rescan(lsc)
+        of AcNewTab:
+          s.tabs.add(Tab(cd: getCurrentDir(),
+                         index: s.currentIndex,
+                         searchQuery: ""))
+          s.switchTab(lsc, s.tabs.high)
+        of AcCloseTab:
+          if s.tabs.len > 1:
+            s.tabs.del(s.currentTab)
+          s.switchTab(lsc, max(0, s.currentTab - 1))
+        of AcTab1:
+          s.switchTab(lsc, 0)
+        of AcTab2:
+          s.switchTab(lsc, 1)
+        of AcTab3:
+          s.switchTab(lsc, 2)
+        of AcTab4:
+          s.switchTab(lsc, 3)
+        of AcTab5:
+          s.switchTab(lsc, 4)
+        of AcTab6:
+          s.switchTab(lsc, 5)
+        of AcTab7:
+          s.switchTab(lsc, 6)
+        of AcTab8:
+          s.switchTab(lsc, 7)
+        of AcTab9:
+          s.switchTab(lsc, 8)
+        of AcTab10:
+          s.switchTab(lsc, 9)
+        of AcEdit:
+          if not s.empty:
+            if s.currentEntry.info.kind == pcFile:
+              withoutNimbox(nb, enable256Colors):
+                editFile(s.currentEntry.path)
+              s.rescan(lsc)
+        of AcPager:
+          if not s.empty:
+            if s.currentEntry.info.kind == pcFile:
+              withoutNimbox(nb, enable256Colors):
+                viewFile(s.currentEntry.path)
+        of AcNewFile:
+          s.modeInfo = ModeInfo(mode: MdInput,
+                                prompt: "new file:",
+                                input: "",
+                                callback: newFile)
+        of AcNewDir:
+          s.modeInfo = ModeInfo(mode: MdInput,
+                                prompt: "new directory:",
+                                input: "",
+                                callback: newDir)
+        of AcRename:
+          let relativePath = extractFilename(s.currentEntry.path)
+          s.modeInfo = ModeInfo(mode: MdInput,
+                                prompt: "rename to:",
+                                input: relativePath,
+                                callback: proc (input: string) =
+            rename(relativePath, input))
+        of AcCopySelected:
+          withoutNimbox(nb, enable256Colors):
+            copyEntries(s.selected)
+          s.selected.clear()
+          s.rescan(lsc)
+        of AcMoveSelected:
+          let pwdBackup = getCurrentDir()
+          withoutNimbox(nb, enable256Colors):
+            moveEntries(s.selected)
+          s.selected.clear()
+          s.safeSetCurDir(pwdBackup)
+          s.rescan(lsc)
+        of AcDeleteSelected:
+          let pwdBackup = getCurrentDir()
+          withoutNimbox(nb, enable256Colors):
+            deleteEntries(s.selected, askYorN("use force? [y/n]: "))
+          s.selected.clear()
+          s.safeSetCurDir(pwdBackup)
+          s.rescan(lsc)
+        of AcSearch:
+          s.currentSearchQuery = ""
+          s.modeInfo = ModeInfo(mode: MdSearch)
+        of AcEndSearch:
+          s.currentSearchQuery = ""
+          s.refresh()
 
 when isMainModule:
   var p = initOptParser()
