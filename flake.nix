@@ -35,7 +35,7 @@
 
               buildPhase = ''
                 export HOME=$TMPDIR;
-                nim -p:${nimbox} -p:${lscolors}/src c -d:release src/nimmm.nim
+                nim --threads:on -p:${nimbox} -p:${lscolors}/src c -d:release src/nimmm.nim
               '';
 
               installPhase = ''
