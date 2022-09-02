@@ -1,4 +1,4 @@
-import std/[strutils, streams, parsecfg, tables, strutils, os]
+import std/[streams, parsecfg, tables, os]
 
 import nimbox
 

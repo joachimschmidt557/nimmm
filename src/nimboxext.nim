@@ -6,22 +6,9 @@ import std/os
 
 import nimbox
 
-template newNb*(enable256Colors: bool): Nimbox =
-  ## Wrapper for `newNimbox`
-  let nb = newNimbox()
-  nb.inputMode = inpEsc and inpMouse
-  if enable256Colors:
-    nb.outputMode = out256
-  nb
-
 template colors256Mode*(): bool =
   ## Should the 256-colors mode be turned on?
   existsEnv("NIMMM_256")
-
-template withoutNimbox*(nb: var Nimbox, enable256Colors: bool, body: untyped) =
-  nb.shutdown()
-  body
-  nb = newNb(enable256Colors)
 
 template c8*(color: int): int =
   ## Convert this color (`ck8`) into

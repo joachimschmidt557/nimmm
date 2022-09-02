@@ -1,5 +1,5 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-            options, re, segfaults]
+            options, re, segfaults, atomics]
 
 import nimbox
 import lscolors
@@ -113,10 +113,28 @@ proc right(s: var State, lsc: LsColors) =
 
 var inputThread: Thread[Nimbox]
 var chan: Channel[seq[nimbox.Event]]
+var inputThreadRunning: Atomic[bool]
+
+template newNb*(enable256Colors: bool): Nimbox =
+  ## Wrapper for `newNimbox`
+  let nb = newNimbox()
+  nb.inputMode = inpEsc and inpMouse
+  if enable256Colors:
+    nb.outputMode = out256
+  nb
+
+template withoutNimbox*(nb: var Nimbox, enable256Colors: bool, body: untyped) =
+  inputThreadRunning.store(false)
+  joinThread(inputThread)
+  nb.shutdown()
+  body
+  nb = newNb(enable256Colors)
+  inputThreadRunning.store(true)
+  createThread(inputThread, inputLoop, nb)
 
 proc inputLoop(nb: Nimbox) =
-  while true:
-    let event = nb.pollEvent()
+  while inputThreadRunning.load:
+    let event = nb.peekEvent(10)
     if event.kind != EventType.None:
       var events = @[event]
       while true:
@@ -136,6 +154,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
 
   s.rescan(lsc)
 
+  inputThreadRunning.store(true)
   chan.open()
   createThread(inputThread, inputLoop, nb)
 
@@ -196,6 +215,9 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         case nimboxEventToAction(event, keymap):
         of AcNone: discard
         of AcQuit:
+          inputThreadRunning.store(false)
+          joinThread(inputThread)
+          chan.close()
           return
         of AcShell:
           let cwdBackup = getCurrentDir()
@@ -207,6 +229,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           s.showHidden = not s.showHidden
           s.refresh()
         of AcSelect:
+          inputThreadRunning.store(false)
           if not s.empty:
             if not s.selected.contains(s.currentEntry.path):
               s.selected.incl(s.currentEntry.path)
