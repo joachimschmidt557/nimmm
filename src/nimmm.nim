@@ -229,7 +229,6 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           s.showHidden = not s.showHidden
           s.refresh()
         of AcSelect:
-          inputThreadRunning.store(false)
           if not s.empty:
             if not s.selected.contains(s.currentEntry.path):
               s.selected.incl(s.currentEntry.path)
