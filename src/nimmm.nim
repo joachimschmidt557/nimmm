@@ -9,7 +9,7 @@ import core, scan, draw, external, nimboxext, keymap, interactions
 proc getIndexOfItem(s: State, name: string): int =
   let
     paths = s.entries.mapIt(it.path)
-    i = paths.binarySearch(name, cmpIgnoreCase)
+    i = paths.binarySearch(name, cmpPaths)
   if i > 0 and s.visibleEntriesMask[i]: s.visibleEntries.binarySearch(i) else: 0
 
 proc safeSetCurDir(s: var State, path: string) =
