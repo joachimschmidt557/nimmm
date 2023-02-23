@@ -16,5 +16,5 @@ proc scan*(lsc: LsColors): tuple[entries: seq[DirEntry], error: bool] =
     except:
       error = true
   entries.sort do (x, y: DirEntry) -> int:
-    cmpIgnoreCase(x.path, y.path)
+    cmpPaths(x.path, y.path)
   return (entries, error)
