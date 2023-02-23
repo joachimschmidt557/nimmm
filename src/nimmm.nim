@@ -1,5 +1,5 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-            options, re, segfaults, atomics]
+            options, re, segfaults, atomics, unicode]
 
 import nimbox
 import lscolors
@@ -181,7 +181,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           of Symbol.Space:
             s.modeInfo.input.add(" ")
           of Symbol.Character:
-            s.modeInfo.input.add(event.ch)
+            s.modeInfo.input.add($event.ch.Rune)
           else:
             discard
         of EventType.Mouse, EventType.Resize, EventType.None:
@@ -203,7 +203,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           of Symbol.Space:
             s.currentSearchQuery.add(" ")
           of Symbol.Character:
-            s.currentSearchQuery.add(event.ch)
+            s.currentSearchQuery.add($event.ch.Rune)
           else:
             discard
 

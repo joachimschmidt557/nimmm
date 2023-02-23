@@ -2,6 +2,7 @@ import std/[times, sets, os, strformat, strutils, options]
 
 import nimbox
 import lscolors/style
+import wcwidth
 
 import core, nimboxext
 
@@ -173,7 +174,7 @@ proc drawInputFooter(prompt: string, query: string, nb: var Nimbox) =
     offset = prompt.len + 1
   nb.print(0, y, prompt, c8(clrYellow), c8(clrBlack))
   nb.print(offset, y, query, c8(clrYellow), c8(clrBlack))
-  nb.cursor = (offset + query.len, y)
+  nb.cursor = (offset + query.wcswidth, y)
 
 proc errMsg(err: ErrorKind): string =
   case err
