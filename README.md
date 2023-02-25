@@ -13,6 +13,21 @@ version of `nnn` to my liking. `nimmm` does not nearly have the same amount of
 features and power than `nnn` but it has enough features to be usable as a daily
 driver for me.
 
+# Table of Contents
+
+1. [Features](#features)
+2. [Installation](#installation)
+    1. [From source](#source)
+    2. [With nimble](#nimble)
+    3. [With Nix](#nix)
+3. [Usage](#usage)
+    1. [Configuration](#configuration)
+    2. [Default keymaps](#keymaps)
+4. [ToDo](#todo)
+5. [Dependencies](#dependencies)
+    1. [Compile-time](#compile-time)
+    2. [Run-time](#run-time)
+
 ## Features
 
 * Support for all plaforms where `nim` and `termbox` can be installed on
@@ -20,6 +35,28 @@ driver for me.
 * Custom keymaps (see below)
 * Simple selection mechanism
 * Incremental search
+
+## Installation
+
+### From source <a name="source"></a>
+
+```shell
+$ git clone https://github.com/joachimschmidt557/nimmm
+$ cd nimmm
+$ nimble build --threads:on
+```
+
+### With nimble <a name="nimble"></a>
+
+```shell
+$ nimble install nimmm
+```
+
+### With Nix <a name="nix"></a>
+
+```shell
+$ nix-env -i nimmm
+```
 
 ## Usage
 
@@ -39,7 +76,7 @@ Other configuration such as keybindings are configured in
 `$XDG_CONFIG_HOME/nimmm.conf` where `$XDG_CONFIG_HOME` defaults to
 `~/.config` if not set.
 
-### Default keymap
+### Default keymap <a name="keymaps"></a>
 
 | Key | Default binding | Description |
 | --- | --- | --- |
@@ -115,27 +152,6 @@ for the terminal user interface to work.
 | `$PAGER` or fallback `less` | a pager |
 | `$NIMMM_OPEN` or fallback `xdg-open` | a file opener |
 
-## Installation
-
-### From source
-
-```shell
-$ git clone https://github.com/joachimschmidt557/nimmm
-$ cd nimmm
-$ nimble install
-```
-
-### With nimble
-
-```shell
-$ nimble install nimmm
-```
-
-### With Nix
-
-```shell
-$ nix-env -i nimmm
-```
 
 ## License
 
