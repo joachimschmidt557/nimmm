@@ -22,7 +22,7 @@ driver for me.
     3. [With Nix](#nix)
 3. [Usage](#usage)
     1. [Configuration](#configuration)
-    2. [Default keymaps](#keymaps)
+    2. [Default keymap](#keymaps)
 4. [ToDo](#todo)
 5. [Dependencies](#dependencies)
     1. [Compile-time](#compile-time)
