@@ -69,7 +69,25 @@
         "flake-utils": "flake-utils",
         "lscolors": "lscolors",
         "nimbox": "nimbox",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "wcwidth": "wcwidth"
+      }
+    },
+    "wcwidth": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1665667912,
+        "narHash": "sha256-VuLaocfWV4/96+xiNr1US6f8UFySfidrqq8zuTD1aRk=",
+        "owner": "shoyu777",
+        "repo": "wcwidth-nim",
+        "rev": "86f8db1a883f6a64e590a56aed81e788389b7196",
+        "type": "github"
+      },
+      "original": {
+        "owner": "shoyu777",
+        "ref": "v0.1.3",
+        "repo": "wcwidth-nim",
+        "type": "github"
       }
     }
   },

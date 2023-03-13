@@ -14,7 +14,12 @@
     flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-utils, nimbox, lscolors }:
+  inputs.wcwidth = {
+    url = "github:shoyu777/wcwidth-nim/v0.1.3";
+    flake = false;
+  };
+
+  outputs = { self, nixpkgs, flake-utils, nimbox, lscolors, wcwidth }:
     (flake-utils.lib.eachDefaultSystem
       (system:
 
@@ -35,7 +40,7 @@
 
               buildPhase = ''
                 export HOME=$TMPDIR;
-                nim --threads:on -p:${nimbox} -p:${lscolors}/src c -d:release src/nimmm.nim
+                nim --threads:on -p:${nimbox} -p:${lscolors}/src -p:${wcwidth}/src c -d:release src/nimmm.nim
               '';
 
               installPhase = ''
