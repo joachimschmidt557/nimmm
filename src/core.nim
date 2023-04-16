@@ -6,16 +6,20 @@ type
   Mode* = enum
     ## The input modes nimmm can be in
     MdNormal,
-    MdInput,
+    MdInputText,
+    MdInputBool,
     MdSearch,
 
   ModeInfo* = object
     case mode*: Mode
     of MdNormal, MdSearch: discard
-    of MdInput:
-      prompt*: string
+    of MdInputText:
+      promptText*: string
       input*: string
-      callback*: proc (input: string)
+      callbackText*: proc (input: string)
+    of MdInputBool:
+      promptBool*: string
+      callbackBool*: proc (input: bool)
 
   Tab* = object
     ## Represents a tab

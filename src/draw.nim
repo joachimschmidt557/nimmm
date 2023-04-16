@@ -216,7 +216,9 @@ proc redraw*(s: State, nb: var Nimbox) =
                  errMsg, nb)
     of MdSearch:
       drawInputFooter("search:", s.currentSearchQuery, nb)
-    of MdInput:
-      drawInputFooter(s.modeInfo.prompt, s.modeInfo.input, nb)
+    of MdInputText:
+      drawInputFooter(s.modeInfo.promptText, s.modeInfo.input, nb)
+    of MdInputBool:
+      drawInputFooter(s.modeInfo.promptBool, "", nb)
 
   nb.present()

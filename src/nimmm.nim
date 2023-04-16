@@ -4,7 +4,7 @@ import std/[os, sets, parseopt, sequtils, algorithm, strutils,
 import nimbox
 import lscolors
 
-import core, scan, draw, external, nimboxext, keymap, interactions
+import core, scan, draw, external, nimboxext, keymap
 
 proc getIndexOfItem(s: State, name: string): int =
   let
@@ -163,8 +163,28 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
 
     for event in chan.recv():
       case s.modeInfo.mode
-      # Input mode: Ignore keymap
-      of MdInput:
+      # Input bool mode: Only allow y/n
+      of MdInputBool:
+        case event.kind
+        of EventType.Key:
+          case event.sym
+          of Symbol.Escape:
+            s.resetTab()
+          of Symbol.Character:
+            case event.ch
+            of 'y', 'Y', 'n', 'N':
+              let yes = event.ch == 'y' or event.ch == 'Y'
+              withoutNimBox(nb, enable256Colors):
+                s.modeInfo.callbackBool(yes)
+              s.resetTab()
+            else:
+              discard
+          else:
+            discard
+        else:
+          discard
+      # Input text mode: Ignore keymap
+      of MdInputText:
         case event.kind
         of EventType.Key:
           case event.sym
@@ -175,8 +195,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               s.modeInfo.input.setLen(s.modeInfo.input.high)
           of Symbol.Enter:
             withoutNimbox(nb, enable256Colors):
-              s.modeInfo.callback(s.modeInfo.input)
-            s.rescan(lsc)
+              s.modeInfo.callbackText(s.modeInfo.input)
             s.resetTab()
           of Symbol.Space:
             s.modeInfo.input.add(" ")
@@ -297,22 +316,27 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               withoutNimbox(nb, enable256Colors):
                 viewFile(s.currentEntry.path)
         of AcNewFile:
-          s.modeInfo = ModeInfo(mode: MdInput,
-                                prompt: "new file:",
+          s.modeInfo = ModeInfo(mode: MdInputText,
+                                promptText: "new file:",
                                 input: "",
-                                callback: newFile)
+                                callbackText: proc (input: string) =
+            newFile(input)
+            s.rescan(lsc))
         of AcNewDir:
-          s.modeInfo = ModeInfo(mode: MdInput,
-                                prompt: "new directory:",
+          s.modeInfo = ModeInfo(mode: MdInputText,
+                                promptText: "new directory:",
                                 input: "",
-                                callback: newDir)
+                                callbackText: proc (input: string) =
+            newDir(input)
+            s.rescan(lsc))
         of AcRename:
           let relativePath = extractFilename(s.currentEntry.path)
-          s.modeInfo = ModeInfo(mode: MdInput,
-                                prompt: "rename to:",
+          s.modeInfo = ModeInfo(mode: MdInputText,
+                                promptText: "rename to:",
                                 input: relativePath,
-                                callback: proc (input: string) =
-            rename(relativePath, input))
+                                callbackText: proc (input: string) =
+            rename(relativePath, input)
+            s.rescan(lsc))
         of AcCopySelected:
           withoutNimbox(nb, enable256Colors):
             copyEntries(s.selected)
@@ -327,11 +351,15 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           s.rescan(lsc)
         of AcDeleteSelected:
           let pwdBackup = getCurrentDir()
-          withoutNimbox(nb, enable256Colors):
-            deleteEntries(s.selected, askYorN("use force? [y/n]: "))
-          s.selected.clear()
-          s.safeSetCurDir(pwdBackup)
-          s.rescan(lsc)
+
+          s.modeInfo = ModeInfo(mode: MdInputBool,
+                                promptBool: "use force? [y/n]:",
+                                callBackBool: proc (input: bool) =
+            deleteEntries(s.selected, input)
+            s.selected.clear()
+            s.safeSetCurDir(pwdBackup)
+            s.rescan(lsc)
+          )
         of AcSearch:
           s.currentSearchQuery = ""
           s.modeInfo = ModeInfo(mode: MdSearch)
