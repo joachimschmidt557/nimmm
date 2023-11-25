@@ -145,6 +145,36 @@ proc inputLoop(nb: Nimbox) =
           events.add(nextEvent)
       chan.send(events)
 
+type
+  ProcessInputTextModeResult = enum
+    PrNoAction,
+    PrCanceled,
+    PrComplete,
+
+proc processInputTextMode(event: nimbox.Event,
+    input: var string): ProcessInputTextModeResult =
+  ## common input processing for MdInputText and MdSearch
+  case event.kind
+  of EventType.Key:
+    case event.sym
+    of Symbol.Escape:
+      return PrCanceled
+    of Symbol.Backspace:
+      if input.len > 0:
+        input.setLen(input.high)
+    of Symbol.Enter:
+      return PrComplete
+    of Symbol.Space:
+      input.add(" ")
+    of Symbol.Character:
+      input.add($event.ch.Rune)
+    else:
+      discard
+  of EventType.Mouse, EventType.Resize, EventType.None:
+    discard
+
+  return PrNoAction
+
 proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
   let
     lsc = parseLsColorsEnv()
@@ -185,50 +215,26 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           discard
       # Input text mode: Ignore keymap
       of MdInputText:
-        case event.kind
-        of EventType.Key:
-          case event.sym
-          of Symbol.Escape:
-            s.resetTab()
-          of Symbol.Backspace:
-            if s.modeInfo.input.len > 0:
-              s.modeInfo.input.setLen(s.modeInfo.input.high)
-          of Symbol.Enter:
-            withoutNimbox(nb, enable256Colors):
-              s.modeInfo.callbackText(s.modeInfo.input)
-            s.resetTab()
-          of Symbol.Space:
-            s.modeInfo.input.add(" ")
-          of Symbol.Character:
-            s.modeInfo.input.add($event.ch.Rune)
-          else:
-            discard
-        of EventType.Mouse, EventType.Resize, EventType.None:
+        case processInputTextMode(event, s.modeInfo.input)
+        of PrCanceled:
+          s.resetTab()
+        of PrComplete:
+          withoutNimbox(nb, enable256Colors):
+            s.modeInfo.callbackText(s.modeInfo.input)
+          s.resetTab()
+        of PrNoAction:
           discard
       # Incremental search mode: Ignore keymap
       of MdSearch:
-        case event.kind
-        of EventType.Key:
-          case event.sym
-          of Symbol.Escape:
-            s.resetTab()
-          of Symbol.Backspace:
-            if s.currentSearchQuery.len == 0:
-              s.resetTab()
-            else:
-              s.currentSearchQuery.setLen(s.currentSearchQuery.high)
-          of Symbol.Enter:
-            s.modeInfo = ModeInfo(mode: MdNormal)
-          of Symbol.Space:
-            s.currentSearchQuery.add(" ")
-          of Symbol.Character:
-            s.currentSearchQuery.add($event.ch.Rune)
-          else:
-            discard
-
-          s.refresh()
-        of EventType.Mouse, EventType.Resize, EventType.None:
+        case processInputTextMode(event, s.currentSearchQuery)
+        of PrCanceled:
+          s.resetTab()
+        of PrComplete:
+          s.modeInfo = ModeInfo(mode: MdNormal)
+        of PrNoAction:
           discard
+
+        s.refresh()
       # Normal keymap
       of MdNormal:
         case nimboxEventToAction(event, keymap):
