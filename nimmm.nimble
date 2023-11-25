@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.2.0"
+version       = "0.3.0"
 author        = "joachimschmidt557"
 description   = "A terminal file manager written in nim"
 license       = "GPL-3.0"
