@@ -1,5 +1,5 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-            options, re, segfaults, atomics, unicode]
+            options, re, segfaults, atomics, unicode, selectors]
 
 import nimbox
 import lscolors
@@ -161,13 +161,24 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
   var
     s = initState()
     events = newSeq[nimbox.Event]()
+    terminalFile = open("/dev/tty")
+    selector = newSelector[int]()
+
+  defer:
+    selector.close()
+    terminalFile.close()
 
   s.rescan(lsc)
+
+  selector.registerHandle(terminalFile.getOsFileHandle().int, {
+      selectors.Event.Read}, 0)
 
   while true:
     redraw(s, nb)
 
-    events = @[nb.pollEvent()]
+    discard selector.select(-1)
+
+    events = @[]
     while true:
       let nextEvent = nb.peekEvent(0)
       if nextEvent.kind == EventType.None:
