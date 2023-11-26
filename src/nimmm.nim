@@ -111,10 +111,6 @@ proc right(s: var State, lsc: LsColors) =
       except:
         s.error = ErrCannotOpen
 
-var inputThread: Thread[Nimbox]
-var chan: Channel[seq[nimbox.Event]]
-var inputThreadRunning: Atomic[bool]
-
 template newNb*(enable256Colors: bool): Nimbox =
   ## Wrapper for `newNimbox`
   let nb = newNimbox()
@@ -124,26 +120,9 @@ template newNb*(enable256Colors: bool): Nimbox =
   nb
 
 template withoutNimbox*(nb: var Nimbox, enable256Colors: bool, body: untyped) =
-  inputThreadRunning.store(false)
-  joinThread(inputThread)
   nb.shutdown()
   body
   nb = newNb(enable256Colors)
-  inputThreadRunning.store(true)
-  createThread(inputThread, inputLoop, nb)
-
-proc inputLoop(nb: Nimbox) =
-  while inputThreadRunning.load:
-    let event = nb.peekEvent(10)
-    if event.kind != EventType.None:
-      var events = @[event]
-      while true:
-        let nextEvent = nb.peekEvent(0)
-        if nextEvent.kind == EventType.None:
-          break
-        else:
-          events.add(nextEvent)
-      chan.send(events)
 
 type
   ProcessInputTextModeResult = enum
@@ -181,17 +160,22 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
     keymap = keyMapFromConfig()
   var
     s = initState()
+    events = newSeq[nimbox.Event]()
 
   s.rescan(lsc)
-
-  inputThreadRunning.store(true)
-  chan.open()
-  createThread(inputThread, inputLoop, nb)
 
   while true:
     redraw(s, nb)
 
-    for event in chan.recv():
+    events = @[nb.pollEvent()]
+    while true:
+      let nextEvent = nb.peekEvent(0)
+      if nextEvent.kind == EventType.None:
+        break
+      else:
+        events.add(nextEvent)
+
+    for event in events:
       case s.modeInfo.mode
       # Input bool mode: Only allow y/n
       of MdInputBool:
@@ -240,9 +224,6 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         case nimboxEventToAction(event, keymap):
         of AcNone: discard
         of AcQuit:
-          inputThreadRunning.store(false)
-          joinThread(inputThread)
-          chan.close()
           return
         of AcShell:
           let cwdBackup = getCurrentDir()
