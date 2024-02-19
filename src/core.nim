@@ -1,4 +1,4 @@
-import std/[os, sets]
+import std/[os, sets, paths]
 
 import lscolors/style
 
@@ -23,7 +23,7 @@ type
 
   Tab* = object
     ## Represents a tab
-    cd*: string
+    cd*: Path
     index*: int
     searchQuery*: string
 
@@ -55,7 +55,7 @@ type
 proc initState*(): State =
   ## Initializes the default startup state
   State(error: ErrNone,
-        tabs: @[Tab(cd: getCurrentDir(), index: 0,
+        tabs: @[Tab(cd: paths.getCurrentDir(), index: 0,
                     searchQuery: "")],
         currentTab: 0,
         showHidden: false,

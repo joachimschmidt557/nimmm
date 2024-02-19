@@ -1,5 +1,5 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-            options, re, segfaults, atomics, unicode, selectors]
+            options, re, segfaults, atomics, unicode, selectors, dirs, paths]
 
 import nimbox
 import lscolors
@@ -12,12 +12,12 @@ proc getIndexOfItem(s: State, name: string): int =
     i = paths.binarySearch(name, cmpPaths)
   if i > 0 and s.visibleEntriesMask[i]: s.visibleEntries.binarySearch(i) else: 0
 
-proc safeSetCurDir(s: var State, path: string) =
+proc safeSetCurDir(s: var State, path: Path) =
   var safeDir = path
   while not dirExists(safeDir):
     safeDir = safeDir.parentDir
   setCurrentDir(safeDir)
-  s.tabs[s.currentTab].cd = getCurrentDir()
+  s.tabs[s.currentTab].cd = paths.getCurrentDir()
 
 proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
   let
@@ -47,10 +47,7 @@ proc refresh(s: var State) =
     if visible: s.visibleEntries &= i
 
   if s.visibleEntries.len > 0:
-    if s.currentIndex < 0:
-      s.currentIndex = 0
-    elif s.currentIndex > s.visibleEntries.high:
-      s.currentIndex = s.visibleEntries.high
+    s.currentIndex = clamp(s.currentIndex, 0, s.visibleEntries.high)
 
 proc rescan(s: var State, lsc: LsColors) =
   s.error = ErrNone
@@ -86,20 +83,19 @@ proc down(s: var State) =
     s.currentIndex = 0
 
 proc left(s: var State, lsc: LsColors) =
-  if parentDir(getCurrentDir()) == "":
+  if parentDir(paths.getCurrentDir()) == Path(""):
     return
-  let prevDir = getCurrentDir()
-  s.safeSetCurDir(parentDir(getCurrentDir()))
-  s.resetTab()
+  let prevDir = os.getCurrentDir()
+  s.safeSetCurDir(parentDir(paths.getCurrentDir()))
   s.rescan(lsc)
   s.currentIndex = getIndexOfItem(s, prevDir)
 
 proc right(s: var State, lsc: LsColors) =
   if not s.empty:
     if s.currentEntry.info.kind == pcDir:
-      let prev = getCurrentDir()
+      let prev = paths.getCurrentDir()
       try:
-        s.safeSetCurDir(s.currentEntry.path)
+        s.safeSetCurDir(Path(s.currentEntry.path))
         s.resetTab()
         s.rescan(lsc)
       except:
@@ -194,14 +190,15 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         of EventType.Key:
           case event.sym
           of Symbol.Escape:
-            s.resetTab()
+            s.modeInfo = ModeInfo(mode: MdNormal)
           of Symbol.Character:
             case event.ch
             of 'y', 'Y', 'n', 'N':
               let yes = event.ch == 'y' or event.ch == 'Y'
               withoutNimBox(nb, enable256Colors):
                 s.modeInfo.callbackBool(yes)
-              s.resetTab()
+
+              s.modeInfo = ModeInfo(mode: MdNormal)
             else:
               discard
           else:
@@ -212,11 +209,12 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
       of MdInputText:
         case processInputTextMode(event, s.modeInfo.input)
         of PrCanceled:
-          s.resetTab()
+          s.modeInfo = ModeInfo(mode: MdNormal)
         of PrComplete:
           withoutNimbox(nb, enable256Colors):
             s.modeInfo.callbackText(s.modeInfo.input)
-          s.resetTab()
+
+          s.modeInfo = ModeInfo(mode: MdNormal)
         of PrNoAction:
           discard
       # Incremental search mode: Ignore keymap
@@ -237,7 +235,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         of AcQuit:
           return
         of AcShell:
-          let cwdBackup = getCurrentDir()
+          let cwdBackup = paths.getCurrentDir()
           withoutNimbox(nb, enable256Colors):
             spawnShell()
           s.safeSetCurDir(cwdBackup)
@@ -270,11 +268,15 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         of AcRight:
           s.right(lsc)
         of AcHomeDir:
-          s.safeSetCurDir(getHomeDir())
-          s.resetTab()
-          s.rescan(lsc)
+          let
+            cd = paths.getCurrentDir()
+            home = Path(getHomeDir())
+          if cd != home:
+            s.safeSetCurDir(home)
+            s.currentIndex = 0
+            s.rescan(lsc)
         of AcNewTab:
-          s.tabs.add(Tab(cd: getCurrentDir(),
+          s.tabs.add(Tab(cd: paths.getCurrentDir(),
                          index: s.currentIndex,
                          searchQuery: ""))
           s.switchTab(lsc, s.tabs.high)
@@ -341,14 +343,14 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           s.selected.clear()
           s.rescan(lsc)
         of AcMoveSelected:
-          let pwdBackup = getCurrentDir()
+          let pwdBackup = paths.getCurrentDir()
           withoutNimbox(nb, enable256Colors):
             moveEntries(s.selected)
           s.selected.clear()
           s.safeSetCurDir(pwdBackup)
           s.rescan(lsc)
         of AcDeleteSelected:
-          let pwdBackup = getCurrentDir()
+          let pwdBackup = paths.getCurrentDir()
 
           s.modeInfo = ModeInfo(mode: MdInputBool,
                                 promptBool: "use force? [y/n]:",
