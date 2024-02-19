@@ -4,22 +4,7 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  inputs.nimbox = {
-    url = "github:dom96/nimbox";
-    flake = false;
-  };
-
-  inputs.lscolors = {
-    url = "github:joachimschmidt557/nim-lscolors/v0.3.3";
-    flake = false;
-  };
-
-  inputs.wcwidth = {
-    url = "github:shoyu777/wcwidth-nim/v0.1.3";
-    flake = false;
-  };
-
-  outputs = { self, nixpkgs, flake-utils, nimbox, lscolors, wcwidth }:
+  outputs = { self, nixpkgs, flake-utils }:
     (flake-utils.lib.eachDefaultSystem
       (system:
 
@@ -27,30 +12,18 @@
         rec {
 
           packages.nimmm =
-            pkgs.stdenv.mkDerivation {
+            pkgs.buildNimPackage {
               pname = "nimmm";
               version = "master";
 
               src = self;
 
-              nativeBuildInputs = with pkgs; [ nim ];
+              lockFile = ./lock.json;
+
               buildInputs = with pkgs; [ termbox pcre ];
-
-              NIX_LDFLAGS = "-lpcre";
-
-              buildPhase = ''
-                export HOME=$TMPDIR;
-                nim --threads:on -p:${nimbox} -p:${lscolors}/src -p:${wcwidth}/src c -d:release src/nimmm.nim
-              '';
-
-              installPhase = ''
-                install -Dt $out/bin src/nimmm
-              '';
             };
 
           defaultPackage = packages.nimmm;
 
-        })) // {
-      hydraJobs.nimmm.x86_64-linux = self.packages.x86_64-linux.nimmm;
-    };
+        }));
 }
