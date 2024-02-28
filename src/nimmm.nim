@@ -88,6 +88,7 @@ proc left(s: var State, lsc: LsColors) =
   let prevDir = os.getCurrentDir()
   s.safeSetCurDir(parentDir(paths.getCurrentDir()))
   s.rescan(lsc)
+  s.resetTab()
   s.currentIndex = getIndexOfItem(s, prevDir)
 
 proc right(s: var State, lsc: LsColors) =
