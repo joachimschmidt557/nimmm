@@ -128,7 +128,8 @@ type
     PrComplete,
 
 proc processInputTextMode(event: nimbox.Event,
-    input: var string): ProcessInputTextModeResult =
+                          input: var string,
+                          cursorPos: var int): ProcessInputTextModeResult =
   ## common input processing for MdInputText and MdSearch
   case event.kind
   of EventType.Key:
@@ -136,14 +137,28 @@ proc processInputTextMode(event: nimbox.Event,
     of Symbol.Escape:
       return PrCanceled
     of Symbol.Backspace:
-      if input.len > 0:
-        input.setLen(input.high)
+      if cursorPos > 0:
+        let (_, runeLen) = lastRune(input, cursorPos - 1)
+        input = input[0..cursorPos - 1 - runeLen] & input.substr(cursorPos)
+        cursorPos -= runeLen
     of Symbol.Enter:
       return PrComplete
     of Symbol.Space:
-      input.add(" ")
+      let inserted = " "
+      input.insert(inserted, cursorPos)
+      cursorPos += inserted.len
     of Symbol.Character:
-      input.add($event.ch.Rune)
+      let inserted = $event.ch.Rune
+      input.insert(inserted, cursorPos)
+      cursorPos += inserted.len
+    of Symbol.Left:
+      if cursorPos > 0:
+        let (_, runeLen) = lastRune(input, cursorPos - 1)
+        cursorPos -= runeLen
+    of Symbol.Right:
+      if cursorPos < input.len:
+        let runeLen = runeLenAt(input, cursorPos)
+        cursorPos += runeLen
     else:
       discard
   of EventType.Mouse, EventType.Resize, EventType.None:
@@ -208,7 +223,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           discard
       # Input text mode: Ignore keymap
       of MdInputText:
-        case processInputTextMode(event, s.modeInfo.input)
+        case processInputTextMode(event, s.modeInfo.input,
+            s.modeInfo.textCursorPos)
         of PrCanceled:
           s.modeInfo = ModeInfo(mode: MdNormal)
         of PrComplete:
@@ -220,7 +236,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
           discard
       # Incremental search mode: Ignore keymap
       of MdSearch:
-        case processInputTextMode(event, s.currentSearchQuery)
+        case processInputTextMode(event, s.currentSearchQuery,
+            s.modeInfo.searchCursorPos)
         of PrCanceled:
           s.resetTab()
         of PrComplete:

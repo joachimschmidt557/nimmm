@@ -168,13 +168,15 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
     nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), c8(clrBlack))
   nb.cursor = (TB_HIDE_CURSOR, TB_HIDE_CURSOR)
 
-proc drawInputFooter(prompt: string, query: string, nb: var Nimbox) =
+proc drawInputFooter(prompt: string, query: string, cursorPos: int,
+    nb: var Nimbox) =
   let
     y = nb.height() - 1
-    offset = prompt.len + 1
+    offset = prompt.wcswidth + 1
+    cursorPos = offset + query[0..cursorPos - 1].wcswidth
   nb.print(0, y, prompt, c8(clrYellow), c8(clrBlack))
   nb.print(offset, y, query, c8(clrYellow), c8(clrBlack))
-  nb.cursor = (offset + query.wcswidth, y)
+  nb.cursor = (cursorPos, y)
 
 proc errMsg(err: ErrorKind): string =
   case err
@@ -215,10 +217,12 @@ proc redraw*(s: State, nb: var Nimbox) =
                  s.showHidden, s.currentSearchQuery != "",
                  errMsg, nb)
     of MdSearch:
-      drawInputFooter("search:", s.currentSearchQuery, nb)
+      drawInputFooter("search:", s.currentSearchQuery,
+          s.modeInfo.searchCursorPos, nb)
     of MdInputText:
-      drawInputFooter(s.modeInfo.promptText, s.modeInfo.input, nb)
+      drawInputFooter(s.modeInfo.promptText, s.modeInfo.input,
+          s.modeInfo.textCursorPos, nb)
     of MdInputBool:
-      drawInputFooter(s.modeInfo.promptBool, "", nb)
+      drawInputFooter(s.modeInfo.promptBool, "", 0, nb)
 
   nb.present()

@@ -12,10 +12,13 @@ type
 
   ModeInfo* = object
     case mode*: Mode
-    of MdNormal, MdSearch: discard
+    of MdNormal: discard
+    of MdSearch:
+      searchCursorPos*: int = 0
     of MdInputText:
       promptText*: string
       input*: string = ""
+      textCursorPos*: int = 0
       callbackText*: proc (input: string)
     of MdInputBool:
       promptBool*: string
