@@ -319,14 +319,12 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
         of AcNewFile:
           s.modeInfo = ModeInfo(mode: MdInputText,
                                 promptText: "new file:",
-                                input: "",
                                 callbackText: proc (input: string) =
             newFile(input)
             s.rescan(lsc))
         of AcNewDir:
           s.modeInfo = ModeInfo(mode: MdInputText,
                                 promptText: "new directory:",
-                                input: "",
                                 callbackText: proc (input: string) =
             newDir(input)
             s.rescan(lsc))

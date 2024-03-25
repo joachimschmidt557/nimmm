@@ -15,7 +15,7 @@ type
     of MdNormal, MdSearch: discard
     of MdInputText:
       promptText*: string
-      input*: string
+      input*: string = ""
       callbackText*: proc (input: string)
     of MdInputBool:
       promptBool*: string
