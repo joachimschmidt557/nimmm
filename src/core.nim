@@ -29,10 +29,8 @@ type
       input*: string = ""
       textCursorPos*: int = 0
       textAction*: InputTextAction
-      callbackText*: proc (input: string)
     of MdInputBool:
       boolAction*: InputBoolAction
-      callbackBool*: proc (input: bool)
 
   Tab* = object
     ## Represents a tab

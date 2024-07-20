@@ -14,7 +14,8 @@ proc getIndexOfItem(s: State, name: string): int =
     i = paths.binarySearch(name, cmpPaths)
   if i > 0 and s.visibleEntriesMask[i]: s.visibleEntries.binarySearch(i) else: 0
 
-proc safeSetCurDir(s: var State, inotifyHandle: var FileHandle, currentDirWatcher: var cint, path: Path) =
+proc safeSetCurDir(s: var State, inotifyHandle: var FileHandle,
+    currentDirWatcher: var cint, path: Path) =
   var safeDir = path
   while not dirExists(safeDir):
     safeDir = safeDir.parentDir
@@ -22,7 +23,8 @@ proc safeSetCurDir(s: var State, inotifyHandle: var FileHandle, currentDirWatche
   s.tabs[s.currentTab].cd = paths.getCurrentDir()
 
   doAssert inotifyHandle.inotifyRmWatch(currentDirWatcher) >= 0
-  currentDirWatcher = inotifyHandle.inotifyAddWatch(os.getCurrentDir(), IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
+  currentDirWatcher = inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
+      IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
   doAssert currentDirWatcher >= 0
 
 proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
@@ -72,7 +74,8 @@ proc resetTab(s: var State) =
   s.modeInfo = ModeInfo(mode: MdNormal)
   s.currentIndex = 0
 
-proc switchTab(s: var State, inotifyHandle: var FileHandle, currentDirWatcher: var cint, lsc: LsColors, i: int) =
+proc switchTab(s: var State, inotifyHandle: var FileHandle,
+    currentDirWatcher: var cint, lsc: LsColors, i: int) =
   if i < s.tabs.len:
     s.currentTab = i
     s.safeSetCurDir(inotifyHandle, currentDirWatcher, s.tabs[s.currentTab].cd)
@@ -88,21 +91,25 @@ proc down(s: var State) =
   if s.currentIndex > s.visibleEntries.high:
     s.currentIndex = 0
 
-proc left(s: var State, inotifyHandle: var FileHandle, currentDirWatcher: var cint, lsc: LsColors) =
+proc left(s: var State, inotifyHandle: var FileHandle,
+    currentDirWatcher: var cint, lsc: LsColors) =
   if parentDir(paths.getCurrentDir()) == Path(""):
     return
   let prevDir = os.getCurrentDir()
-  s.safeSetCurDir(inotifyHandle, currentDirWatcher, parentDir(paths.getCurrentDir()))
+  s.safeSetCurDir(inotifyHandle, currentDirWatcher, parentDir(
+      paths.getCurrentDir()))
   s.resetTab()
   s.rescan(lsc)
   s.currentIndex = getIndexOfItem(s, prevDir)
 
-proc right(s: var State, inotifyHandle: var FileHandle, currentDirWatcher: var cint, lsc: LsColors) =
+proc right(s: var State, inotifyHandle: var FileHandle,
+    currentDirWatcher: var cint, lsc: LsColors) =
   if not s.empty:
     if s.currentEntry.info.kind == pcDir:
       let prev = paths.getCurrentDir()
       try:
-        s.safeSetCurDir(inotifyHandle, currentDirWatcher, Path(s.currentEntry.path))
+        s.safeSetCurDir(inotifyHandle, currentDirWatcher, Path(
+            s.currentEntry.path))
         s.resetTab()
         s.rescan(lsc)
       except:
@@ -140,7 +147,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
     selector = newSelector[int]()
 
   doAssert inotifyHandle >= 0
-  var currentDirWatcher = inotifyHandle.inotifyAddWatch(os.getCurrentDir(), IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
+  var currentDirWatcher = inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
+      IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
   doAssert currentDirWatcher >= 0
 
   defer:
@@ -184,7 +192,13 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
                 of 'y', 'Y', 'n', 'N':
                   let yes = event.ch == 'y' or event.ch == 'Y'
                   withoutNimBox(nb, enable256Colors):
-                    s.modeInfo.callbackBool(yes)
+                    case s.modeInfo.boolAction:
+                    of IBADelete:
+                      let pwdBackup = paths.getCurrentDir()
+                      deleteEntries(s.selected, yes)
+                      s.selected.clear()
+                      s.safeSetCurDir(inotifyHandle, currentDirWatcher, pwdBackup)
+                      s.rescan(lsc)
 
                   s.modeInfo = ModeInfo(mode: MdNormal)
                 else:
@@ -201,7 +215,18 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               s.modeInfo = ModeInfo(mode: MdNormal)
             of PrComplete:
               withoutNimbox(nb, enable256Colors):
-                s.modeInfo.callbackText(s.modeInfo.input)
+                let input = s.modeInfo.input
+                case s.modeInfo.textAction:
+                of ITANewFile:
+                  newFile(input)
+                  s.rescan(lsc)
+                of ITANewDir:
+                  newDir(input)
+                  s.rescan(lsc)
+                of ITARename:
+                  let relativePath = extractFilename(s.currentEntry.path)
+                  rename(relativePath, input)
+                  s.rescan(lsc)
 
               s.modeInfo = ModeInfo(mode: MdNormal)
             of PrNoAction:
@@ -273,7 +298,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
             of AcCloseTab:
               if s.tabs.len > 1:
                 s.tabs.del(s.currentTab)
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, max(0, s.currentTab - 1))
+              s.switchTab(inotifyHandle, currentDirWatcher, lsc, max(0,
+                  s.currentTab - 1))
             of AcTab1:
               s.switchTab(inotifyHandle, currentDirWatcher, lsc, 0)
             of AcTab2:
@@ -307,24 +333,16 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
                     viewFile(s.currentEntry.path)
             of AcNewFile:
               s.modeInfo = ModeInfo(mode: MdInputText,
-                                    textAction: ITANewFile,
-                                    callbackText: proc (input: string) =
-                newFile(input)
-                s.rescan(lsc))
+                                    textAction: ITANewFile)
             of AcNewDir:
               s.modeInfo = ModeInfo(mode: MdInputText,
-                                    textAction: ITANewDir,
-                                    callbackText: proc (input: string) =
-                newDir(input)
-                s.rescan(lsc))
+                                    textAction: ITANewDir)
             of AcRename:
               let relativePath = extractFilename(s.currentEntry.path)
               s.modeInfo = ModeInfo(mode: MdInputText,
                                     input: relativePath,
-                                    textAction: ITARename,
-                                    callbackText: proc (input: string) =
-                rename(relativePath, input)
-                s.rescan(lsc))
+                                    textCursorPos: relativePath.len,
+                                    textAction: ITARename)
             of AcCopySelected:
               withoutNimbox(nb, enable256Colors):
                 copyEntries(s.selected)
@@ -338,16 +356,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               s.safeSetCurDir(inotifyHandle, currentDirWatcher, pwdBackup)
               s.rescan(lsc)
             of AcDeleteSelected:
-              let pwdBackup = paths.getCurrentDir()
-
               s.modeInfo = ModeInfo(mode: MdInputBool,
-                                    boolAction: IBADelete,
-                                    callBackBool: proc (input: bool) =
-                deleteEntries(s.selected, input)
-                s.selected.clear()
-                s.safeSetCurDir(inotifyHandle, currentDirWatcher, pwdBackup)
-                s.rescan(lsc)
-              )
+                                    boolAction: IBADelete)
             of AcSearch:
               s.currentSearchQuery = ""
               s.modeInfo = ModeInfo(mode: MdSearch)
