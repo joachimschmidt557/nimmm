@@ -8,24 +8,29 @@ import lscolors
 
 import core, scan, draw, external, nimboxext, keymap, readline
 
+type
+  State = object of core.State
+    lsc: LsColors
+    inotifyHandle: FileHandle
+    currentDirWatcher: cint
+
 proc getIndexOfItem(s: State, name: string): int =
   let
     paths = s.entries.mapIt(it.path)
     i = paths.binarySearch(name, cmpPaths)
   if i > 0 and s.visibleEntriesMask[i]: s.visibleEntries.binarySearch(i) else: 0
 
-proc safeSetCurDir(s: var State, inotifyHandle: var FileHandle,
-    currentDirWatcher: var cint, path: Path) =
+proc safeSetCurDir(s: var State, path: Path) =
   var safeDir = path
   while not dirExists(safeDir):
     safeDir = safeDir.parentDir
   setCurrentDir(safeDir)
   s.tabs[s.currentTab].cd = paths.getCurrentDir()
 
-  doAssert inotifyHandle.inotifyRmWatch(currentDirWatcher) >= 0
-  currentDirWatcher = inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
+  doAssert s.inotifyHandle.inotifyRmWatch(s.currentDirWatcher) >= 0
+  s.currentDirWatcher = s.inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
       IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
-  doAssert currentDirWatcher >= 0
+  doAssert s.currentDirWatcher >= 0
 
 proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
   let
@@ -57,10 +62,10 @@ proc refresh(s: var State) =
   if s.visibleEntries.len > 0:
     s.currentIndex = clamp(s.currentIndex, 0, s.visibleEntries.high)
 
-proc rescan(s: var State, lsc: LsColors) =
+proc rescan(s: var State) =
   s.error = ErrNone
 
-  let scanResult = scan(lsc)
+  let scanResult = scan(s.lsc)
   s.entries = scanResult.entries
   s.visibleEntriesMask = repeat(true, s.entries.len)
   s.visibleEntries = @[]
@@ -74,12 +79,11 @@ proc resetTab(s: var State) =
   s.modeInfo = ModeInfo(mode: MdNormal)
   s.currentIndex = 0
 
-proc switchTab(s: var State, inotifyHandle: var FileHandle,
-    currentDirWatcher: var cint, lsc: LsColors, i: int) =
+proc switchTab(s: var State, i: int) =
   if i < s.tabs.len:
     s.currentTab = i
-    s.safeSetCurDir(inotifyHandle, currentDirWatcher, s.tabs[s.currentTab].cd)
-    s.rescan(lsc)
+    s.safeSetCurDir(s.tabs[s.currentTab].cd)
+    s.rescan()
 
 proc up(s: var State) =
   s.currentIndex = s.currentIndex - 1
@@ -91,30 +95,26 @@ proc down(s: var State) =
   if s.currentIndex > s.visibleEntries.high:
     s.currentIndex = 0
 
-proc left(s: var State, inotifyHandle: var FileHandle,
-    currentDirWatcher: var cint, lsc: LsColors) =
+proc left(s: var State) =
   if parentDir(paths.getCurrentDir()) == Path(""):
     return
   let prevDir = os.getCurrentDir()
-  s.safeSetCurDir(inotifyHandle, currentDirWatcher, parentDir(
-      paths.getCurrentDir()))
+  s.safeSetCurDir(parentDir(paths.getCurrentDir()))
   s.resetTab()
-  s.rescan(lsc)
+  s.rescan()
   s.currentIndex = getIndexOfItem(s, prevDir)
 
-proc right(s: var State, inotifyHandle: var FileHandle,
-    currentDirWatcher: var cint, lsc: LsColors) =
+proc right(s: var State) =
   if not s.empty:
     if s.currentEntry.info.kind == pcDir:
       let prev = paths.getCurrentDir()
       try:
-        s.safeSetCurDir(inotifyHandle, currentDirWatcher, Path(
-            s.currentEntry.path))
+        s.safeSetCurDir(Path(s.currentEntry.path))
         s.resetTab()
-        s.rescan(lsc)
+        s.rescan()
       except:
         s.error = ErrCannotCd
-        s.safeSetCurDir(inotifyHandle, currentDirWatcher, prev)
+        s.safeSetCurDir(prev)
     elif s.currentEntry.info.kind == pcFile:
       try:
         openFile(s.currentEntry.path)
@@ -136,30 +136,34 @@ template withoutNimbox(nb: var Nimbox, enable256Colors: bool, body: untyped) =
 
 proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
   let
-    lsc = parseLsColorsEnv()
     keymap = keyMapFromConfig()
   var
-    s = initState()
-    events = newSeq[nimbox.Event]()
+    s: State
 
+    events = newSeq[nimbox.Event]()
     terminalFile = open("/dev/tty")
-    inotifyHandle = inotifyInit()
     selector = newSelector[int]()
 
-  doAssert inotifyHandle >= 0
-  var currentDirWatcher = inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
+  # init core state
+  s.initState()
+
+  # init extra state
+  s.lsc = parseLsColorsEnv()
+  s.inotifyHandle = inotifyInit()
+  doAssert s.inotifyHandle >= 0
+  s.currentDirWatcher = s.inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
       IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
-  doAssert currentDirWatcher >= 0
+  doAssert s.currentDirWatcher >= 0
 
   defer:
     selector.close()
     terminalFile.close()
 
-  s.rescan(lsc)
+  s.rescan()
 
   selector.registerHandle(terminalFile.getOsFileHandle().int, {
       selectors.Event.Read}, 0)
-  selector.registerHandle(inotifyHandle.int, {
+  selector.registerHandle(s.inotifyHandle.int, {
       selectors.Event.Read}, 1)
 
   while true:
@@ -197,8 +201,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
                       let pwdBackup = paths.getCurrentDir()
                       deleteEntries(s.selected, yes)
                       s.selected.clear()
-                      s.safeSetCurDir(inotifyHandle, currentDirWatcher, pwdBackup)
-                      s.rescan(lsc)
+                      s.safeSetCurDir(pwdBackup)
+                      s.rescan()
 
                   s.modeInfo = ModeInfo(mode: MdNormal)
                 else:
@@ -219,14 +223,14 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
                 case s.modeInfo.textAction:
                 of ITANewFile:
                   newFile(input)
-                  s.rescan(lsc)
+                  s.rescan()
                 of ITANewDir:
                   newDir(input)
-                  s.rescan(lsc)
+                  s.rescan()
                 of ITARename:
                   let relativePath = extractFilename(s.currentEntry.path)
                   rename(relativePath, input)
-                  s.rescan(lsc)
+                  s.rescan()
 
               s.modeInfo = ModeInfo(mode: MdNormal)
             of PrNoAction:
@@ -253,8 +257,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               let cwdBackup = paths.getCurrentDir()
               withoutNimbox(nb, enable256Colors):
                 spawnShell()
-              s.safeSetCurDir(inotifyHandle, currentDirWatcher, cwdBackup)
-              s.rescan(lsc)
+              s.safeSetCurDir(cwdBackup)
+              s.rescan()
             of AcToggleHidden:
               s.showHidden = not s.showHidden
               s.refresh()
@@ -279,53 +283,53 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
             of AcUp:
               s.up()
             of AcLeft:
-              s.left(inotifyHandle, currentDirWatcher, lsc)
+              s.left()
             of AcRight:
-              s.right(inotifyHandle, currentDirWatcher, lsc)
+              s.right()
             of AcHomeDir:
               let
                 cd = paths.getCurrentDir()
                 home = Path(getHomeDir())
               if cd != home:
-                s.safeSetCurDir(inotifyHandle, currentDirWatcher, home)
+                s.safeSetCurDir(home)
                 s.currentIndex = 0
-                s.rescan(lsc)
+                s.rescan()
             of AcNewTab:
               s.tabs.add(Tab(cd: paths.getCurrentDir(),
                              index: s.currentIndex,
                              searchQuery: ""))
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, s.tabs.high)
+              s.switchTab(s.tabs.high)
             of AcCloseTab:
               if s.tabs.len > 1:
                 s.tabs.del(s.currentTab)
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, max(0,
+              s.switchTab(max(0,
                   s.currentTab - 1))
             of AcTab1:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 0)
+              s.switchTab(0)
             of AcTab2:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 1)
+              s.switchTab(1)
             of AcTab3:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 2)
+              s.switchTab(2)
             of AcTab4:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 3)
+              s.switchTab(3)
             of AcTab5:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 4)
+              s.switchTab(4)
             of AcTab6:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 5)
+              s.switchTab(5)
             of AcTab7:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 6)
+              s.switchTab(6)
             of AcTab8:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 7)
+              s.switchTab(7)
             of AcTab9:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 8)
+              s.switchTab(8)
             of AcTab10:
-              s.switchTab(inotifyHandle, currentDirWatcher, lsc, 9)
+              s.switchTab(9)
             of AcEdit:
               if not s.empty:
                 if s.currentEntry.info.kind == pcFile:
                   withoutNimbox(nb, enable256Colors):
                     editFile(s.currentEntry.path)
-                  s.rescan(lsc)
+                  s.rescan()
             of AcPager:
               if not s.empty:
                 if s.currentEntry.info.kind == pcFile:
@@ -347,14 +351,14 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               withoutNimbox(nb, enable256Colors):
                 copyEntries(s.selected)
               s.selected.clear()
-              s.rescan(lsc)
+              s.rescan()
             of AcMoveSelected:
               let pwdBackup = paths.getCurrentDir()
               withoutNimbox(nb, enable256Colors):
                 moveEntries(s.selected)
               s.selected.clear()
-              s.safeSetCurDir(inotifyHandle, currentDirWatcher, pwdBackup)
-              s.rescan(lsc)
+              s.safeSetCurDir(pwdBackup)
+              s.rescan()
             of AcDeleteSelected:
               s.modeInfo = ModeInfo(mode: MdInputBool,
                                     boolAction: IBADelete)
@@ -366,8 +370,8 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               s.refresh()
       of 1:
         var evs = newSeq[byte](8192)
-        discard read(inotifyHandle, evs[0].addr, evs.len)
-        s.rescan(lsc)
+        discard read(s.inotifyHandle, evs[0].addr, evs.len)
+        s.rescan()
       else:
         discard
 

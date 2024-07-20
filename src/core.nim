@@ -17,7 +17,7 @@ type
     ITARename,
 
   InputBoolAction* = enum
-    ## Actions run on completion of boolinput
+    ## Actions run on completion of bool input
     IBADelete,
 
   ModeInfo* = object
@@ -51,7 +51,7 @@ type
     ErrCannotShow,
     ErrCannotOpen,
 
-  State* = object
+  State* = object of RootObj
     ## Represents a possible state of nimmm
     error*: ErrorKind
     tabs*: seq[Tab]
@@ -63,18 +63,18 @@ type
     visibleEntries*: seq[int]
     selected*: HashSet[string]
 
-proc initState*(): State =
+proc initState*(s: var State) =
   ## Initializes the default startup state
-  State(error: ErrNone,
-        tabs: @[Tab(cd: paths.getCurrentDir(), index: 0,
-                    searchQuery: "")],
-        currentTab: 0,
-        showHidden: false,
-        modeInfo: ModeInfo(mode: MdNormal),
-        entries: @[],
-        visibleEntriesMask: @[],
-        visibleEntries: @[],
-        selected: initHashSet[string]())
+  s.error = ErrNone
+  s.tabs = @[Tab(cd: paths.getCurrentDir(), index: 0,
+              searchQuery: "")]
+  s.currentTab = 0
+  s.showHidden = false
+  s.modeInfo = ModeInfo(mode: MdNormal)
+  s.entries = @[]
+  s.visibleEntriesMask = @[]
+  s.visibleEntries = @[]
+  s.selected = initHashSet[string]()
 
 template currentIndex*(s: State): int =
   ## Gets the current index, basically sugar for getting the current index of
