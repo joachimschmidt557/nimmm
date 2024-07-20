@@ -9,8 +9,8 @@ type
     PrComplete,
 
 proc processInputTextMode*(event: nimbox.Event,
-                          input: var string,
-                          cursorPos: var int): ProcessInputTextModeResult =
+                           input: var string,
+                           cursorPos: var int): ProcessInputTextModeResult =
   ## common input processing for MdInputText and MdSearch
   case event.kind
   of EventType.Key:
@@ -22,6 +22,10 @@ proc processInputTextMode*(event: nimbox.Event,
         let (_, runeLen) = lastRune(input, cursorPos - 1)
         input = input[0..cursorPos - 1 - runeLen] & input.substr(cursorPos)
         cursorPos -= runeLen
+    of Symbol.Delete:
+      if cursorPos < input.len:
+        let runeLen = runeLenAt(input, cursorPos)
+        input = input[0..cursorPos - 1] & input.substr(cursorPos + runeLen)
     of Symbol.Enter:
       return PrComplete
     of Symbol.Space:

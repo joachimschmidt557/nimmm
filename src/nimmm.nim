@@ -1,5 +1,5 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-            options, re, segfaults, atomics, unicode, selectors, dirs, paths]
+            options, re, segfaults, selectors, dirs, paths]
 
 import nimbox
 import lscolors
