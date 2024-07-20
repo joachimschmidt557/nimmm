@@ -114,7 +114,7 @@ proc right(s: var State, inotifyHandle: var FileHandle, currentDirWatcher: var c
       except:
         s.error = ErrCannotOpen
 
-template newNb*(enable256Colors: bool): Nimbox =
+template newNb(enable256Colors: bool): Nimbox =
   ## Wrapper for `newNimbox`
   let nb = newNimbox()
   nb.inputMode = inpEsc and inpMouse
@@ -122,7 +122,7 @@ template newNb*(enable256Colors: bool): Nimbox =
     nb.outputMode = out256
   nb
 
-template withoutNimbox*(nb: var Nimbox, enable256Colors: bool, body: untyped) =
+template withoutNimbox(nb: var Nimbox, enable256Colors: bool, body: untyped) =
   nb.shutdown()
   body
   nb = newNb(enable256Colors)
@@ -307,21 +307,21 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
                     viewFile(s.currentEntry.path)
             of AcNewFile:
               s.modeInfo = ModeInfo(mode: MdInputText,
-                                    promptText: "new file:",
+                                    textAction: ITANewFile,
                                     callbackText: proc (input: string) =
                 newFile(input)
                 s.rescan(lsc))
             of AcNewDir:
               s.modeInfo = ModeInfo(mode: MdInputText,
-                                    promptText: "new directory:",
+                                    textAction: ITANewDir,
                                     callbackText: proc (input: string) =
                 newDir(input)
                 s.rescan(lsc))
             of AcRename:
               let relativePath = extractFilename(s.currentEntry.path)
               s.modeInfo = ModeInfo(mode: MdInputText,
-                                    promptText: "rename to:",
                                     input: relativePath,
+                                    textAction: ITARename,
                                     callbackText: proc (input: string) =
                 rename(relativePath, input)
                 s.rescan(lsc))
@@ -341,7 +341,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               let pwdBackup = paths.getCurrentDir()
 
               s.modeInfo = ModeInfo(mode: MdInputBool,
-                                    promptBool: "use force? [y/n]:",
+                                    boolAction: IBADelete,
                                     callBackBool: proc (input: bool) =
                 deleteEntries(s.selected, input)
                 s.selected.clear()

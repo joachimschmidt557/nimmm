@@ -10,18 +10,28 @@ type
     MdInputBool,
     MdSearch,
 
+  InputTextAction* = enum
+    ## Actions run on completion of text input
+    ITANewFile,
+    ITANewDir,
+    ITARename,
+
+  InputBoolAction* = enum
+    ## Actions run on completion of boolinput
+    IBADelete,
+
   ModeInfo* = object
     case mode*: Mode
     of MdNormal: discard
     of MdSearch:
       searchCursorPos*: int = 0
     of MdInputText:
-      promptText*: string
       input*: string = ""
       textCursorPos*: int = 0
+      textAction*: InputTextAction
       callbackText*: proc (input: string)
     of MdInputBool:
-      promptBool*: string
+      boolAction*: InputBoolAction
       callbackBool*: proc (input: bool)
 
   Tab* = object

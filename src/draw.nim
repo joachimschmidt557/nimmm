@@ -185,6 +185,16 @@ proc errMsg(err: ErrorKind): string =
   of ErrCannotShow: "Some entries couldn't be displayed"
   of ErrCannotOpen: "Cannot open file"
 
+proc textInputPrompt(textAction: InputTextAction): string =
+  case textAction
+  of ITANewFile: "new file:"
+  of ITANewDir: "new directory:"
+  of ITARename: "rename:"
+
+proc boolInputPrompt(boolAction: InputBoolAction): string =
+  case boolAction
+  of IBADelete: "use force? [y/n]:"
+
 proc redraw*(s: State, nb: var Nimbox) =
   let
     topIndex = getTopIndex(s.visibleEntries.len, s.currentIndex, nb)
@@ -220,9 +230,11 @@ proc redraw*(s: State, nb: var Nimbox) =
       drawInputFooter("search:", s.currentSearchQuery,
           s.modeInfo.searchCursorPos, nb)
     of MdInputText:
-      drawInputFooter(s.modeInfo.promptText, s.modeInfo.input,
+      let prompt = textInputPrompt(s.modeInfo.textAction)
+      drawInputFooter(prompt, s.modeInfo.input,
           s.modeInfo.textCursorPos, nb)
     of MdInputBool:
-      drawInputFooter(s.modeInfo.promptBool, "", 0, nb)
+      let prompt = boolInputPrompt(s.modeInfo.boolAction)
+      drawInputFooter(prompt, "", 0, nb)
 
   nb.present()
