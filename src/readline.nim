@@ -1,6 +1,6 @@
 import std/unicode
 
-import nimbox
+import nimboxext
 
 type
   ProcessInputTextModeResult* = enum
@@ -8,7 +8,7 @@ type
     PrCanceled,
     PrComplete,
 
-proc processInputTextMode*(event: nimbox.Event,
+proc processInputTextMode*(event: nimboxext.Event,
                            input: var string,
                            cursorPos: var int): ProcessInputTextModeResult =
   ## common input processing for MdInputText and MdSearch

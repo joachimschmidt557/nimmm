@@ -6,26 +6,70 @@ import std/os
 
 import nimbox
 
-template colors256Mode*(): bool =
-  ## Should the 256-colors mode be turned on?
-  existsEnv("NIMMM_256")
+export
+  nimbox.Colors256,
+  nimbox.Modifier,
+  nimbox.Symbol,
+  nimbox.Mouse,
+  nimbox.EventType,
+  nimbox.Event,
 
-template c8*(color: int): int =
+  nimbox.Color,
+  nimbox.Style,
+  nimbox.InputMode,
+  nimbox.OutputMode,
+
+  nimbox.newNimbox,
+  nimbox.`inputMode=`,
+  nimbox.`outputMode=`,
+  nimbox.shutdown,
+  nimbox.width,
+  nimbox.height,
+  nimbox.clear,
+  nimbox.present,
+  nimbox.print,
+  nimbox.`cursor=`,
+  nimbox.peekEvent,
+
+  nimbox.TB_HIDE_CURSOR
+
+type
+  Nimbox* = object of nimbox.Nimbox
+    enable256Colors: bool
+
+proc newNb*(enable256Colors: bool): Nimbox =
+  ## Wrapper for `newNimbox`
+
+  # This is not optimal, but we use the fact that nimbox.Nimbox is just an empty object. Therefore, we do not use nb further
+  let nb = newNimbox()
+  nb.inputMode = inpEsc and inpMouse
+  if enable256Colors:
+    nb.outputMode = out256
+
+  Nimbox(enable256Colors: enable256Colors)
+
+template withoutNimbox*(nb: var Nimbox, body: untyped) =
+  let enable256Colors = nb.enable256Colors
+  nb.shutdown()
+  body
+  nb = newNb(enable256Colors)
+
+proc c8*(nb: Nimbox, color: int): int =
   ## Convert this color (`ck8`) into
   ## an int with regards to the current color mode
-  if colors256Mode():
+  if nb.enable256Colors:
     color - 1
   else:
     color
 
-template c8*(color: Color): int =
+proc c8*(nb: Nimbox, color: Color): int =
   ## Convert this color enum into an int
   ## with regards to the current color mode
-  c8(ord(color))
+  nb.c8(ord(color))
 
-template fgHighlight*(): int =
+proc fgHighlight*(nb: Nimbox): int =
   ## Provides a viable foreground color for highlighted items
-  if colors256Mode():
+  if nb.enable256Colors:
     16
   else:
     ord(clrBlack)

@@ -1,6 +1,5 @@
 import std/[times, sets, os, strformat, strutils, options]
 
-import nimbox
 import lscolors/style
 import wcwidth
 
@@ -63,7 +62,7 @@ proc formatPath(path: string, length: int): string =
   if path.len > length:
     result.setLen(length)
 
-proc lsColorToNimboxColor(c: style.Color): nimbox.Color =
+proc lsColorToNimboxColor(c: style.Color): nimboxext.Color =
   case c.kind
   of ck8:
     case c.ck8Val
@@ -77,13 +76,13 @@ proc lsColorToNimboxColor(c: style.Color): nimbox.Color =
     of c8White: return clrWhite
   else: return clrWhite
 
-proc lsColorToNimboxColors256(c: style.Color): Option[nimbox.Colors256] =
+proc lsColorToNimboxColors256(c: style.Color): Option[nimboxext.Colors256] =
   case c.kind
   of ckFixed:
-    return some nimbox.Colors256(int(c.ckFixedVal))
-  else: return none nimbox.Colors256
+    return some nimboxext.Colors256(int(c.ckFixedVal))
+  else: return none nimboxext.Colors256
 
-proc getFgColor(entry: DirEntry): nimbox.Color =
+proc getFgColor(entry: DirEntry): nimboxext.Color =
   let
     sty = entry.style
   if sty.fg.isSome:
@@ -91,22 +90,22 @@ proc getFgColor(entry: DirEntry): nimbox.Color =
   else:
     clrWhite
 
-proc getFgColors256(entry: DirEntry): Option[nimbox.Colors256] =
+proc getFgColors256(entry: DirEntry): Option[nimboxext.Colors256] =
   let
     sty = entry.style
   if sty.fg.isSome:
     sty.fg.get.lsColorToNimboxColors256()
   else:
-    none nimbox.Colors256
+    none nimboxext.Colors256
 
-proc lsColorToNimboxStyle(sty: style.Style): nimbox.Style =
+proc lsColorToNimboxStyle(sty: style.Style): nimboxext.Style =
   let font = sty.font
 
   if font.bold: styBold
   elif font.underline: styUnderline
   else: styNone
 
-proc getStyle(entry: DirEntry): nimbox.Style =
+proc getStyle(entry: DirEntry): nimboxext.Style =
   entry.style.lsColorToNimboxStyle()
 
 proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
@@ -125,9 +124,9 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
       (if isDir: "       /" else: sizeToString(entry.info.size)) &
       " " &
       relativePath
-    fgC8 = c8(getFgColor(entry))
-    fg = if highlight: fgHighlight() else: getFgColors256(entry).get(fgC8)
-    bg = if highlight: c8(clrWhite) else: defaultOrBlack
+    fgC8 = nb.c8(getFgColor(entry))
+    fg = if highlight: nb.fgHighlight() else: getFgColors256(entry).get(fgC8)
+    bg = if highlight: nb.c8(clrWhite) else: defaultOrBlack
     style = if highlight: styBold else: getStyle(entry)
 
   nb.print(0, y, line, fg, bg, style)
@@ -135,16 +134,16 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
 proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
   var
     offsetCd = 6
-  nb.print(0, 0, "nimmm", c8(clrYellow), defaultOrBlack, styNone)
+  nb.print(0, 0, "nimmm", nb.c8(clrYellow), defaultOrBlack, styNone)
   if numTabs > 1:
     for i in 1 .. numTabs:
       let text = $i
       if i == currentTab+1:
-        nb.print(offsetCd, 0, text, c8(clrYellow), defaultOrBlack, styBold)
+        nb.print(offsetCd, 0, text, nb.c8(clrYellow), defaultOrBlack, styBold)
       else:
         nb.print(offsetCd, 0, text)
       offsetCd += text.len + 1 # no wcwidth necessary, only digits + 1 space
-  nb.print(offsetCd, 0, getCurrentDir(), c8(clrYellow), defaultOrBlack, styBold)
+  nb.print(offsetCd, 0, getCurrentDir(), nb.c8(clrYellow), defaultOrBlack, styBold)
 
 proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
                 search: bool, errMsg: string, nb: var Nimbox) =
@@ -157,15 +156,15 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
     offsetSelected = offsetS + (if search: 2 else: 0)
     offsetErrMsg = offsetSelected + (if lenSelected >
         0: selectedStr.len + 1 else: 0)
-  nb.print(0, y, entriesStr, c8(clrYellow), defaultOrBlack)
+  nb.print(0, y, entriesStr, nb.c8(clrYellow), defaultOrBlack)
   if hidden:
-    nb.print(offsetH + 1, y, "H", c8(clrYellow), defaultOrBlack, styBold)
+    nb.print(offsetH + 1, y, "H", nb.c8(clrYellow), defaultOrBlack, styBold)
   if search:
-    nb.print(offsetS + 1, y, "S", c8(clrYellow), defaultOrBlack, styBold)
+    nb.print(offsetS + 1, y, "S", nb.c8(clrYellow), defaultOrBlack, styBold)
   if lenSelected > 0:
     nb.print(offsetSelected + 1, y, selectedStr)
   if errMsg.len > 0:
-    nb.print(offsetErrMsg + 1, y, errMsg, c8(clrRed), defaultOrBlack)
+    nb.print(offsetErrMsg + 1, y, errMsg, nb.c8(clrRed), defaultOrBlack)
   nb.cursor = (TB_HIDE_CURSOR, TB_HIDE_CURSOR)
 
 proc drawInputFooter(prompt: string, query: string, cursorPos: int,
@@ -174,7 +173,7 @@ proc drawInputFooter(prompt: string, query: string, cursorPos: int,
     y = nb.height() - 1
     offset = prompt.wcswidth + 1
     cursorPos = offset + query[0..cursorPos - 1].wcswidth
-  nb.print(0, y, prompt, c8(clrYellow), defaultOrBlack)
+  nb.print(0, y, prompt, nb.c8(clrYellow), defaultOrBlack)
   nb.print(offset, y, query, defaultOrBlack, defaultOrBlack)
   nb.cursor = (cursorPos, y)
 
@@ -211,7 +210,7 @@ proc redraw*(s: State, nb: var Nimbox) =
         "Empty directory"
       else:
         "No matching results"
-    nb.print(0, 2, message, c8(clrYellow), defaultOrBlack)
+    nb.print(0, 2, message, nb.c8(clrYellow), defaultOrBlack)
   for i in topIndex .. bottomIndex:
     let entry = s.entries[s.visibleEntries[i]]
     drawDirEntry(entry,

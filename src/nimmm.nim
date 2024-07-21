@@ -3,7 +3,6 @@ import std/[os, sets, parseopt, sequtils, algorithm, strutils,
 
 import posix, posix/inotify
 
-import nimbox
 import lscolors
 
 import core, scan, draw, external, nimboxext, keymap, readline
@@ -121,26 +120,13 @@ proc right(s: var State) =
       except:
         s.error = ErrCannotOpen
 
-template newNb(enable256Colors: bool): Nimbox =
-  ## Wrapper for `newNimbox`
-  let nb = newNimbox()
-  nb.inputMode = inpEsc and inpMouse
-  if enable256Colors:
-    nb.outputMode = out256
-  nb
-
-template withoutNimbox(nb: var Nimbox, enable256Colors: bool, body: untyped) =
-  nb.shutdown()
-  body
-  nb = newNb(enable256Colors)
-
-proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
+proc mainLoop(nb: var Nimbox) =
   let
     keymap = keyMapFromConfig()
   var
     s: State
 
-    events = newSeq[nimbox.Event]()
+    events = newSeq[nimboxext.Event]()
     terminalFile = open("/dev/tty")
     selector = newSelector[int]()
 
@@ -195,7 +181,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
                 case event.ch
                 of 'y', 'Y', 'n', 'N':
                   let yes = event.ch == 'y' or event.ch == 'Y'
-                  withoutNimBox(nb, enable256Colors):
+                  withoutNimBox(nb):
                     case s.modeInfo.boolAction:
                     of IBADelete:
                       let pwdBackup = paths.getCurrentDir()
@@ -218,7 +204,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
             of PrCanceled:
               s.modeInfo = ModeInfo(mode: MdNormal)
             of PrComplete:
-              withoutNimbox(nb, enable256Colors):
+              withoutNimbox(nb):
                 let input = s.modeInfo.input
                 case s.modeInfo.textAction:
                 of ITANewFile:
@@ -255,7 +241,7 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
               return
             of AcShell:
               let cwdBackup = paths.getCurrentDir()
-              withoutNimbox(nb, enable256Colors):
+              withoutNimbox(nb):
                 spawnShell()
               s.safeSetCurDir(cwdBackup)
               s.rescan()
@@ -331,13 +317,13 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
             of AcEdit:
               if not s.empty:
                 if s.currentEntry.info.kind == pcFile:
-                  withoutNimbox(nb, enable256Colors):
+                  withoutNimbox(nb):
                     editFile(s.currentEntry.path)
                   s.rescan()
             of AcPager:
               if not s.empty:
                 if s.currentEntry.info.kind == pcFile:
-                  withoutNimbox(nb, enable256Colors):
+                  withoutNimbox(nb):
                     viewFile(s.currentEntry.path)
             of AcNewFile:
               s.modeInfo = ModeInfo(mode: MdInputText,
@@ -352,13 +338,13 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
                                     textCursorPos: relativePath.len,
                                     textAction: ITARename)
             of AcCopySelected:
-              withoutNimbox(nb, enable256Colors):
+              withoutNimbox(nb):
                 copyEntries(s.selected)
               s.selected.clear()
               s.rescan()
             of AcMoveSelected:
               let pwdBackup = paths.getCurrentDir()
-              withoutNimbox(nb, enable256Colors):
+              withoutNimbox(nb):
                 moveEntries(s.selected)
               s.selected.clear()
               s.safeSetCurDir(pwdBackup)
@@ -389,7 +375,7 @@ when isMainModule:
         setCurrentDir(p.key)
       else: continue
 
-  let enable256Colors = colors256Mode()
+  let enable256Colors = existsEnv("NIMMM_256")
   var nb = newNb(enable256Colors)
   addQuitProc(proc () {.noconv.} = nb.shutdown())
-  mainLoop(nb, enable256Colors)
+  mainLoop(nb)

@@ -1,6 +1,6 @@
 import std/[streams, parsecfg, tables, os]
 
-import nimbox
+import nimboxext
 
 type
   Action* = enum
@@ -136,7 +136,7 @@ proc keymapFromConfig*(): Keymap =
       discard
   close(p)
 
-proc nimboxEventToAction*(event: nimbox.Event, keymap: Keymap): Action =
+proc nimboxEventToAction*(event: nimboxext.Event, keymap: Keymap): Action =
   ## Decides whether an action is associated with this event and in that case,
   ## returns that action
   case event.kind:
