@@ -359,9 +359,13 @@ proc mainLoop(nb: var Nimbox) =
               s.currentSearchQuery = ""
               s.refresh()
       of 1:
-        var evs = newSeq[byte](8192)
-        discard read(s.inotifyHandle, evs[0].addr, evs.len)
-        s.rescan()
+        var
+          evs = newSeq[byte](8192)
+          rescan = false
+        let n = read(s.inotifyHandle, evs[0].addr, evs.len)
+        for e in inotify_events(evs[0].addr, n):
+          if e.mask != IN_IGNORED: rescan = true
+        if rescan: s.rescan()
       else:
         discard
 

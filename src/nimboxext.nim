@@ -2,8 +2,6 @@
 ##
 ## These functions help in toggling the 256-colors option
 
-import std/os
-
 import nimbox
 
 export

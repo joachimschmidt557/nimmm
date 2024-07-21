@@ -123,7 +123,7 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
       " " &
       (if isDir: "       /" else: sizeToString(entry.info.size)) &
       " " &
-      relativePath
+      relativePath.formatPath(pathWidth)
     fgC8 = nb.c8(getFgColor(entry))
     fg = if highlight: nb.fgHighlight() else: getFgColors256(entry).get(fgC8)
     bg = if highlight: nb.c8(clrWhite) else: defaultOrBlack
