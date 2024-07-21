@@ -302,8 +302,12 @@ proc mainLoop(nb: var Nimbox, enable256Colors: bool) =
             of AcCloseTab:
               if s.tabs.len > 1:
                 s.tabs.del(s.currentTab)
-              s.switchTab(max(0,
-                  s.currentTab - 1))
+              s.switchTab(max(0, s.currentTab - 1))
+            of AcNextTab:
+              if s.currentTab < s.tabs.high:
+                s.switchTab(s.currentTab + 1)
+              else:
+                s.switchTab(0)
             of AcTab1:
               s.switchTab(0)
             of AcTab2:

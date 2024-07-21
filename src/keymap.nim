@@ -29,6 +29,7 @@ type
     AcMoveSelected,
     AcNewTab,
     AcCloseTab,
+    AcNextTab,
     AcTab1,
     AcTab2,
     AcTab3,
@@ -54,7 +55,7 @@ let
                   "first": AcFirst, "last": AcLast, "down": AcDown,
                   "up": AcUp, "left": AcLeft, "right": AcRight,
                   "home": AcHomeDir, "new-tab": AcNewTab,
-                  "close-tab": AcCloseTab,
+                  "close-tab": AcCloseTab, "next-tab": AcNextTab,
                   "tab-1": AcTab1, "tab-2": AcTab2, "tab-3": AcTab3,
                   "tab-4": AcTab4, "tab-5": AcTab5, "tab-6": AcTab6,
                   "tab-7": AcTab7, "tab-8": AcTab8, "tab-9": AcTab9,
@@ -95,7 +96,8 @@ let
   defaultSymbols = {Symbol.Enter: AcRight, Symbol.Backspace: AcLeft,
                      Symbol.Space: AcSelect, Symbol.Up: AcUp,
                      Symbol.Down: AcDown, Symbol.Left: AcLeft,
-                     Symbol.Right: AcRight, Symbol.Escape: AcEndSearch}.newTable
+                     Symbol.Right: AcRight, Symbol.Escape: AcEndSearch,
+                     Symbol.Tab: AcNextTab}.newTable
   defaultMouse = {Mouse.WheelUp: AcUp, Mouse.WheelDown: AcDown}.newTable
   defaultKeymap* = Keymap(chars: defaultChars, symbols: defaultSymbols,
       mouse: defaultMouse)
