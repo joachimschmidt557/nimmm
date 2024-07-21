@@ -12,5 +12,5 @@ bin           = @["nimmm"]
 
 requires "nim >= 1.4.4"
 requires "nimbox >= 0.1.0"
-requires "lscolors >= 0.3.3"
+requires "lscolors >= 1.0.0"
 requires "wcwidth >= 0.1.3"
