@@ -133,15 +133,17 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
   nb.print(0, y, line, fg, bg, style)
 
 proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
-  let
-    offsetCd = 6 + (if numTabs > 1: 2*numTabs else: 0)
-  nb.print(0, 0, "nimmm ", c8(clrYellow), defaultOrBlack, styNone)
+  var
+    offsetCd = 6
+  nb.print(0, 0, "nimmm", c8(clrYellow), defaultOrBlack, styNone)
   if numTabs > 1:
     for i in 1 .. numTabs:
+      let text = $i
       if i == currentTab+1:
-        nb.print(6+2*(i-1), 0, $(i) & " ", c8(clrYellow), defaultOrBlack, styBold)
+        nb.print(offsetCd, 0, text, c8(clrYellow), defaultOrBlack, styBold)
       else:
-        nb.print(6+2*(i-1), 0, $(i) & " ")
+        nb.print(offsetCd, 0, text)
+      offsetCd += text.len + 1 # no wcwidth necessary, only digits + 1 space
   nb.print(offsetCd, 0, getCurrentDir(), c8(clrYellow), defaultOrBlack, styBold)
 
 proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
@@ -149,21 +151,21 @@ proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
   let
     y = nb.height() - 1
     entriesStr = $(index + 1) & "/" & $lenEntries
-    selectedStr = " " & $lenSelected & " selected"
+    selectedStr = $lenSelected & " selected"
     offsetH = entriesStr.len
     offsetS = offsetH + (if hidden: 2 else: 0)
     offsetSelected = offsetS + (if search: 2 else: 0)
     offsetErrMsg = offsetSelected + (if lenSelected >
-        0: selectedStr.len else: 0)
+        0: selectedStr.len + 1 else: 0)
   nb.print(0, y, entriesStr, c8(clrYellow), defaultOrBlack)
   if hidden:
-    nb.print(offsetH, y, " H", c8(clrYellow), defaultOrBlack, styBold)
+    nb.print(offsetH + 1, y, "H", c8(clrYellow), defaultOrBlack, styBold)
   if search:
-    nb.print(offsetS, y, " S", c8(clrYellow), defaultOrBlack, styBold)
+    nb.print(offsetS + 1, y, "S", c8(clrYellow), defaultOrBlack, styBold)
   if lenSelected > 0:
-    nb.print(offsetSelected, y, selectedStr)
+    nb.print(offsetSelected + 1, y, selectedStr)
   if errMsg.len > 0:
-    nb.print(offsetErrMsg, y, " " & errMsg, c8(clrRed), defaultOrBlack)
+    nb.print(offsetErrMsg + 1, y, errMsg, c8(clrRed), defaultOrBlack)
   nb.cursor = (TB_HIDE_CURSOR, TB_HIDE_CURSOR)
 
 proc drawInputFooter(prompt: string, query: string, cursorPos: int,
