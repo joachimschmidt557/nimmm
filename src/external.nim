@@ -2,7 +2,7 @@ import std/[os, osproc, sets, sequtils]
 
 proc spawnShell*() =
   const
-    fallback = "/bin/sh"
+    fallback = "sh"
   stdout.writeLine("""
 
  /\^/\^/\^/\

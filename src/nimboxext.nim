@@ -23,9 +23,9 @@ template c8*(color: Color): int =
   ## with regards to the current color mode
   c8(ord(color))
 
-template fgBlack*(): int =
-  ## Provides a viable foreground-black color
+template fgHighlight*(): int =
+  ## Provides a viable foreground color for highlighted items
   if colors256Mode():
-    8
+    16
   else:
     ord(clrBlack)
