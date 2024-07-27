@@ -353,8 +353,8 @@ proc mainLoop(nb: var Nimbox) =
               s.modeInfo = ModeInfo(mode: MdInputBool,
                                     boolAction: IBADelete)
             of AcSearch:
-              s.currentSearchQuery = ""
-              s.modeInfo = ModeInfo(mode: MdSearch)
+              s.modeInfo = ModeInfo(mode: MdSearch,
+                                    searchCursorPos: s.currentSearchQuery.len)
             of AcEndSearch:
               s.currentSearchQuery = ""
               s.refresh()
