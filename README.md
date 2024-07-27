@@ -3,59 +3,56 @@
 [![Build](https://github.com/joachimschmidt557/nimmm/actions/workflows/build.yml/badge.svg)](https://github.com/joachimschmidt557/nimmm/actions/workflows/build.yml)
 ![GitHub](https://img.shields.io/github/license/joachimschmidt557/nimmm.svg)
 
-A terminal file manager written in [nim](https://nim-lang.org/)
-inspired by the awesome [nnn](https://github.com/jarun/nnn).
+A terminal file manager for Linux
 
-[![asciicast](https://asciinema.org/a/aEEz3wkiAvjx2vlBZbQqxOga3.svg)](https://asciinema.org/a/aEEz3wkiAvjx2vlBZbQqxOga3)
-
-The goal of `nimmm` is not to replace `nnn`; I just wanted to code my own
-version of `nnn` to my liking. `nimmm` does not nearly have the same amount of
-features and power than `nnn` but it has enough features to be usable as a daily
-driver for me.
+[![asciicast](https://asciinema.org/a/tGAr5PkesSBBgYBmzCQl30hE0.svg)](https://asciinema.org/a/tGAr5PkesSBBgYBmzCQl30hE0)
 
 # Table of Contents
 
 1. [Features](#features)
 2. [Installation](#installation)
     1. [From source](#source)
-    2. [With nimble](#nimble)
-    3. [With Nix](#nix)
+    2. [Nix](#nix)
 3. [Usage](#usage)
     1. [Configuration](#configuration)
     2. [Default keymap](#keymaps)
 4. [ToDo](#todo)
-5. [Dependencies](#dependencies)
-    1. [Compile-time](#compile-time)
-    2. [Run-time](#run-time)
+5. [External Tools](#external-tools)
 
 ## Features
 
-* Support for all plaforms where `nim` and `termbox` can be installed on
+* Unlimited tab support
 * Colorizing with `LS_COLORS`
 * Custom keymaps (see below)
-* Simple selection mechanism
 * Incremental search
 
 ## Installation
 
+I'm not aware of any distros packaging `nimmm` apart from NixOS, so
+you will probably have to compile `nimmm` from source on non-NixOS
+distros.
+
 ### From source <a name="source"></a>
 
-```shell
-$ git clone https://github.com/joachimschmidt557/nimmm
-$ cd nimmm
-$ nimble build --threads:on
+You will need the [Nim development
+toolchain](https://nim-lang.org/install_unix.html). Furthermore,
+`termbox-devel` or `libtermbox-dev` is required for the terminal user
+interface.
+
+```bash
+git clone https://github.com/joachimschmidt557/nimmm
+cd nimmm
+nimble build
 ```
 
-### With nimble <a name="nimble"></a>
+### Nix
 
-```shell
-$ nimble install nimmm
-```
+`nimmm` is included in nixpkgs.
 
-### With Nix <a name="nix"></a>
-
-```shell
-$ nix-env -i nimmm
+```bash
+nix-env -i nimmm
+# or, if you prefer nix flakes
+nix profile install nixpkgs#nimmm
 ```
 
 ## Usage
@@ -77,6 +74,8 @@ Other configuration such as keybindings are configured in
 `~/.config` if not set.
 
 ### Default keymap <a name="keymaps"></a>
+
+The default keymap is similar to that of `less`.
 
 | Key | Default binding | Description |
 | --- | --- | --- |
@@ -105,10 +104,11 @@ Other configuration such as keybindings are configured in
 | <kbd>d</kbd> | `new-dir` | create a new directory |
 | <kbd>t</kbd> | `new-tab` | new tab |
 | <kbd>w</kbd> | `close-tab` | close tab |
+| <kbd>Tab</kbd> | `next-tab` | next tab |
 | <kbd>1</kbd>..<kbd>0</kbd> | `tab-x` | go to tab 1..10 |
 
-If you prefer more Emacs-oriented movement keybindings, you can add
-this to your configuration file:
+Keybindings are customized in the configuration file. For example, if
+you prefer more Emacs-oriented movement keybindings, you can do this:
 
 ``` toml
 [Keybindings]
@@ -128,26 +128,12 @@ b=left
 
 * Help page
 
-## Dependencies
-
-### Compile-time
-
-The main dependency nimmm needs is the `nim` development toolchain, i.e. the
-`nim` compiler and the `nimble` package manager. A C compiler (gcc, clang, etc.)
-or a C++ compiler is necessary for compiling the generated C/C++ code to
-binaries.
-
-Apart from that, these libraries are required:
-
-* `termbox-devel` or `libtermbox-dev` is required in order
-for the terminal user interface to work.
-
-### Run-time
+## External programs
 
 | Dependency | Use |
 | --- | --- |
 | `cp`, `mv`, `rm`, `mkdir`, `touch` | `nimmm` delegates all operations on files and directories to these utilities to save all the error-handling and permission-checking work. These utilities should (hopefully) be on your UNIX system |
-| `$SHELL` or fallback `/bin/sh` | a shell |
+| `$SHELL` or fallback `sh` | an interactive shell |
 | `$EDITOR` or fallback `vi` | an editor |
 | `$PAGER` or fallback `less` | a pager |
 | `$NIMMM_OPEN` or fallback `xdg-open` | a file opener |
