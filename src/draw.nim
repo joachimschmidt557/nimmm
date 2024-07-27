@@ -131,7 +131,7 @@ proc drawDirEntry(entry: DirEntry, y: int, highlight: bool, selected: bool,
 
   nb.print(0, y, line, fg, bg, style)
 
-proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
+proc drawHeader(numTabs: int, currentTab: int, path: string, nb: var Nimbox) =
   var
     offsetCd = 6
   nb.print(0, 0, "nimmm", nb.c8(clrYellow), defaultOrBlack, styNone)
@@ -143,28 +143,39 @@ proc drawHeader(numTabs: int, currentTab: int, nb: var Nimbox) =
       else:
         nb.print(offsetCd, 0, text)
       offsetCd += text.len + 1 # no wcwidth necessary, only digits + 1 space
-  nb.print(offsetCd, 0, getCurrentDir(), nb.c8(clrYellow), defaultOrBlack, styBold)
+  let
+    pathWidth = nb.width() - offsetCd
+  nb.print(offsetCd, 0, path.formatPath(pathWidth), nb.c8(clrYellow),
+      defaultOrBlack, styBold)
 
 proc drawFooter(index: int, lenEntries: int, lenSelected: int, hidden: bool,
-                search: bool, errMsg: string, nb: var Nimbox) =
+                searchQuery: string, message: string, nb: var Nimbox) =
+  const
+    searchPrefix = "search:"
+    searchPrefixLen = searchPrefix.len + 1
   let
     y = nb.height() - 1
     entriesStr = $(index + 1) & "/" & $lenEntries
     selectedStr = $lenSelected & " selected"
-    offsetH = entriesStr.len
+    searchWidth = searchPrefixLen + searchQuery.wcswidth
+
+    offsetH = entriesStr.len + 1 # no wcwidth necessary, only digits + '/'
     offsetS = offsetH + (if hidden: 2 else: 0)
-    offsetSelected = offsetS + (if search: 2 else: 0)
-    offsetErrMsg = offsetSelected + (if lenSelected >
+    offsetSelected = offsetS + (if searchQuery.len > 0: searchWidth + 1 else: 0)
+    offsetMessageLeft = offsetSelected + (if lenSelected >
         0: selectedStr.len + 1 else: 0)
+    offsetMessageRight = nb.width() - message.wcswidth
+    offsetMessage = max(offsetMessageLeft, offsetMessageRight)
   nb.print(0, y, entriesStr, nb.c8(clrYellow), defaultOrBlack)
   if hidden:
-    nb.print(offsetH + 1, y, "H", nb.c8(clrYellow), defaultOrBlack, styBold)
-  if search:
-    nb.print(offsetS + 1, y, "S", nb.c8(clrYellow), defaultOrBlack, styBold)
+    nb.print(offsetH, y, "H", nb.c8(clrYellow), defaultOrBlack, styBold)
+  if searchQuery.len > 0:
+    nb.print(offsetS, y, searchPrefix, nb.c8(clrYellow), defaultOrBlack)
+    nb.print(offsetS + searchPrefixLen, y, searchQuery)
   if lenSelected > 0:
-    nb.print(offsetSelected + 1, y, selectedStr)
-  if errMsg.len > 0:
-    nb.print(offsetErrMsg + 1, y, errMsg, nb.c8(clrRed), defaultOrBlack)
+    nb.print(offsetSelected, y, selectedStr, nb.c8(clrYellow), defaultOrBlack)
+  if message.len > 0:
+    nb.print(offsetMessage, y, message, nb.c8(clrYellow), defaultOrBlack)
   nb.cursor = (TB_HIDE_CURSOR, TB_HIDE_CURSOR)
 
 proc drawInputFooter(prompt: string, query: string, cursorPos: int,
@@ -173,7 +184,7 @@ proc drawInputFooter(prompt: string, query: string, cursorPos: int,
     y = nb.height() - 1
     offset = prompt.wcswidth + 1
     cursorPos = offset + query[0..cursorPos - 1].wcswidth
-  nb.print(0, y, prompt, nb.c8(clrYellow), defaultOrBlack)
+  nb.print(0, y, prompt, nb.c8(clrYellow), defaultOrBlack, styBold)
   nb.print(offset, y, query, defaultOrBlack, defaultOrBlack)
   nb.cursor = (cursorPos, y)
 
@@ -202,7 +213,7 @@ proc redraw*(s: State, nb: var Nimbox) =
 
   nb.clear()
   if nb.height() > 4:
-    drawHeader(s.tabs.len, s.currentTab, nb)
+    drawHeader(s.tabs.len, s.currentTab, getCurrentDir(), nb)
 
   if s.visibleEntries.len < 1:
     let message =
@@ -223,7 +234,7 @@ proc redraw*(s: State, nb: var Nimbox) =
     case s.modeInfo.mode:
     of MdNormal:
       drawFooter(s.currentIndex, s.visibleEntries.len, s.selected.len,
-                 s.showHidden, s.currentSearchQuery != "",
+                 s.showHidden, s.currentSearchQuery,
                  errMsg, nb)
     of MdSearch:
       drawInputFooter("search:", s.currentSearchQuery,
