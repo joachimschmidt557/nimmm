@@ -1,8 +1,8 @@
 # Package
 
-version       = "0.3.0"
+version       = "0.4.0"
 author        = "joachimschmidt557"
-description   = "A terminal file manager written in nim"
+description   = "A terminal file manager for Linux"
 license       = "GPL-3.0"
 srcDir        = "src"
 bin           = @["nimmm"]
