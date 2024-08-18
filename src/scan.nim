@@ -13,7 +13,7 @@ proc scan*(lsc: LsColors): tuple[entries: seq[DirEntry], error: bool] =
       entries.add(DirEntry(path: path,
                            info: getFileInfo(path, false),
                            style: lsc.styleForPath(path)))
-    except:
+    except CatchableError:
       error = true
   entries.sort do (x, y: DirEntry) -> int:
     cmpPaths(x.path, y.path)

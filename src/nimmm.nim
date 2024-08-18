@@ -7,6 +7,9 @@ import lscolors
 
 import core, scan, draw, external, nimboxext, keymap, readline
 
+const
+  inotifyMask = IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO
+
 type
   State = object of core.State
     lsc: LsColors
@@ -28,7 +31,7 @@ proc safeSetCurDir(s: var State, path: Path) =
 
   doAssert s.inotifyHandle.inotifyRmWatch(s.currentDirWatcher) >= 0
   s.currentDirWatcher = s.inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
-      IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
+                                                        inotifyMask)
   doAssert s.currentDirWatcher >= 0
 
 proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
@@ -111,13 +114,13 @@ proc right(s: var State) =
         s.safeSetCurDir(Path(s.currentEntry.path))
         s.resetTab()
         s.rescan()
-      except:
+      except CatchableError:
         s.error = ErrCannotCd
         s.safeSetCurDir(prev)
     elif s.currentEntry.info.kind == pcFile:
       try:
         openFile(s.currentEntry.path)
-      except:
+      except CatchableError:
         s.error = ErrCannotOpen
 
 proc mainLoop(nb: var Nimbox) =
@@ -138,7 +141,7 @@ proc mainLoop(nb: var Nimbox) =
   s.inotifyHandle = inotifyInit()
   doAssert s.inotifyHandle >= 0
   s.currentDirWatcher = s.inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
-      IN_CREATE or IN_DELETE or IN_MOVED_FROM or IN_MOVED_TO)
+                                                        inotifyMask)
   doAssert s.currentDirWatcher >= 0
 
   defer:
