@@ -29,10 +29,10 @@ proc safeSetCurDir(s: var State, path: Path) =
   setCurrentDir(safeDir)
   s.tabs[s.currentTab].cd = paths.getCurrentDir()
 
-  doAssert s.inotifyHandle.inotifyRmWatch(s.currentDirWatcher) >= 0
+  if s.currentDirWatcher >= 0:
+    doAssert s.inotifyHandle.inotifyRmWatch(s.currentDirWatcher) >= 0
   s.currentDirWatcher = s.inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
                                                         inotifyMask)
-  doAssert s.currentDirWatcher >= 0
 
 proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
   let
@@ -142,7 +142,6 @@ proc mainLoop(nb: var Nimbox) =
   doAssert s.inotifyHandle >= 0
   s.currentDirWatcher = s.inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
                                                         inotifyMask)
-  doAssert s.currentDirWatcher >= 0
 
   defer:
     selector.close()
