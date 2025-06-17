@@ -52,7 +52,13 @@ proc compileRegex(searchQuery: string): Option[Regex] =
     none(Regex)
 
 proc refresh(s: var State) =
-  let regex = compileRegex(s.currentSearchQuery)
+  let
+    regex = compileRegex(s.currentSearchQuery)
+    currentEntryPath: Option[string] =
+      if s.currentIndex >= 0 and s.currentIndex <= s.visibleEntries.high:
+        some(s.currentEntry.path)
+      else:
+        none(string)
 
   s.visibleEntries = @[]
 
@@ -62,7 +68,10 @@ proc refresh(s: var State) =
     if visible: s.visibleEntries &= i
 
   if s.visibleEntries.len > 0:
-    s.currentIndex = clamp(s.currentIndex, 0, s.visibleEntries.high)
+    if currentEntryPath.isSome:
+      s.currentIndex = getIndexOfItem(s, currentEntryPath.get)
+    else:
+      s.currentIndex = clamp(s.currentIndex, 0, s.visibleEntries.high)
 
 proc rescan(s: var State) =
   s.error = ErrNone
