@@ -1,5 +1,5 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-            options, re, segfaults, selectors, dirs, paths]
+            options, re, segfaults, selectors, dirs, paths, strformat, exitprocs]
 
 import posix, posix/inotify
 
@@ -381,16 +381,23 @@ proc mainLoop(nb: var Nimbox) =
         discard
 
 when isMainModule:
-  var p = initOptParser()
-  while true:
-    p.next()
-    case p.kind
-      of cmdEnd: break
-      of cmdArgument:
-        setCurrentDir(p.key)
-      else: continue
+  for kind, key, val in getopt():
+    case kind
+    of cmdEnd: break
+    of cmdShortOption:
+      case key
+      of "c":
+        if val != "":
+          quit(fmt"Unexpected value for command-line option '{key}'", 1)
+
+        addExitProc(proc () {.noconv.} = echo $paths.getCurrentDir())
+      else:
+        quit(fmt"Invalid command-line option '{key}'", 1)
+    of cmdArgument:
+      setCurrentDir(key)
+    else: discard
 
   let enable256Colors = existsEnv("NIMMM_256")
   var nb = newNb(enable256Colors)
-  addQuitProc(proc () {.noconv.} = nb.shutdown())
+  addExitProc(proc () {.noconv.} = nb.shutdown())
   mainLoop(nb)
