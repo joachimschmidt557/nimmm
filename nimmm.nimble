@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.4.0"
+version       = "0.5.0"
 author        = "joachimschmidt557"
 description   = "A terminal file manager for Linux"
 license       = "GPL-3.0"
