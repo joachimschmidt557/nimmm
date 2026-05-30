@@ -9,11 +9,11 @@ jobs:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@v23
+    - uses: actions/checkout@v6
+    - uses: cachix/install-nix-action@v31
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: cachix/cachix-action@v12
+    - uses: cachix/cachix-action@v17
       with:
         name: nimmm
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
