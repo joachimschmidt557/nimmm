@@ -20,7 +20,7 @@
 
               lockFile = ./lock.json;
 
-              buildInputs = with pkgs; [ termbox pcre ];
+              buildInputs = with pkgs; [ termbox ];
             };
 
           defaultPackage = packages.nimmm;

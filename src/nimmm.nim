@@ -1,9 +1,11 @@
 import std/[os, sets, parseopt, sequtils, algorithm, strutils,
-            options, re, segfaults, selectors, dirs, paths, strformat, exitprocs]
+            options, segfaults, selectors, dirs, paths, strformat, exitprocs]
 
 import posix, posix/inotify
 
 import lscolors
+
+import tinyre
 
 import core, scan, draw, external, nimboxext, keymap, readline
 
@@ -34,22 +36,22 @@ proc safeSetCurDir(s: var State, path: Path) =
   s.currentDirWatcher = s.inotifyHandle.inotifyAddWatch(os.getCurrentDir(),
                                                         inotifyMask)
 
-proc visible(entry: DirEntry, showHidden: bool, regex: Option[Regex]): bool =
+proc visible(entry: DirEntry, showHidden: bool, regex: Option[Re]): bool =
   let
     notHidden = showHidden or not isHidden(entry.path)
     matchesRe = if regex.isSome: extractFilename(entry.path).contains(
         regex.get) else: true
   matchesRe and notHidden
 
-proc compileRegex(searchQuery: string): Option[Regex] =
+proc compileRegex(searchQuery: string): Option[Re] =
   if searchQuery != "":
     try:
-      let compiled = re(searchQuery, flags = {reStudy, reIgnoreCase})
+      let compiled = re(searchQuery, flags = {reIgnoreCase})
       some(compiled)
-    except RegexError:
-      none(Regex)
+    except ValueError:
+      none(Re)
   else:
-    none(Regex)
+    none(Re)
 
 proc refresh(s: var State) =
   let
